@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id          Int          @id @default(autoincrement())
+  name        String
+  employees   Employee[]
+  customers   Customer[]
+  projects    Project[]
+  createdAt   DateTime     @default(now())
+}
+
+model Employee {
+  id          Int           @id @default(autoincrement())
+  org         Organization  @relation(fields: [orgId], references: [id])
+  orgId       Int
+  name        String
+  email       String        @unique
+  password    String
+  role        String        @default("employee") // could be 'admin' or 'employee'
+  tasks       Task[]
+  createdAt   DateTime      @default(now())
+}
+
+model Customer {
+  id          Int           @id @default(autoincrement())
+  org         Organization  @relation(fields: [orgId], references: [id])
+  orgId       Int
+  name        String
+  email       String        @unique
+  password    String
+  projects    Project[]
+  createdAt   DateTime      @default(now())
+}
+
+model Project {
+  id          Int           @id @default(autoincrement())
+  org         Organization  @relation(fields: [orgId], references: [id])
+  orgId       Int
+  customer    Customer?     @relation(fields: [customerId], references: [id])
+  customerId  Int?
+  name        String
+  description String?
+  status      String        @default("pending") // pending, active, completed
+  tasks       Task[]
+  chats       Chat[]
+  createdAt   DateTime      @default(now())
+}
+
+model Task {
+  id           Int         @id @default(autoincrement())
+  project      Project     @relation(fields: [projectId], references: [id])
+  projectId    Int
+  assignedTo   Employee?   @relation(fields: [assignedToId], references: [id])
+  assignedToId Int?
+  title        String
+  description  String?
+  status       String      @default("pending") // pending, in_progress, completed
+  dueDate      DateTime?
+  createdAt    DateTime    @default(now())
+}
+
+model Chat {
+  id          Int         @id @default(autoincrement())
+  project     Project     @relation(fields: [projectId], references: [id])
+  projectId   Int
+  senderId    Int
+  senderType  String      // 'employee' or 'customer'
+  message     String
+  createdAt   DateTime    @default(now())
+}
+
