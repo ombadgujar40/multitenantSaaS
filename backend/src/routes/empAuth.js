@@ -1,28 +1,54 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/prismaconfig.js";
+import { verifyToken } from "../middleware/verifytoken.js";
+
+export const getEmp = async (req, res) => {
+  const userId = req.user.id
+  try {
+    const employee = await prisma.employee.findUnique({
+      where: { id: userId }, select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        org: { select: { name: true } }, // optional: org info
+      }
+    })
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    res.json(employee);
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+
 
 export const login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-        const user = await prisma.employee.findUnique({ where: { email } });
-        if (!user) return res.status(400).json({ message: "User not found" });
+    const user = await prisma.employee.findUnique({ where: { email } });
+    if (!user) return res.status(400).json({ message: "User not found" });
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-        const token = jwt.sign(
-            { id: user.id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: "7d" }
-        );
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-        res.status(200).json({ message: "Login successful", token });
-    } catch (error) {
-        console.error("Login Error:", error);
-        res.status(500).json({ message: "Server error" });
-    }
+    res.status(200).json({ message: "Login successful", token });
+  } catch (error) {
+    console.error("Login Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 }
 
 export const register = async (req, res) => {
