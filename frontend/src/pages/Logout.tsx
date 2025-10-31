@@ -6,8 +6,10 @@ const Logout = () => {
     const { logout } = useAuth()
     const navigate = useNavigate()
     useEffect(() => {
-        logout()
-        navigate("/login")
+        const msg = logout()
+        if (msg) {
+            navigate("/login")
+        }
     }, [])
 
 

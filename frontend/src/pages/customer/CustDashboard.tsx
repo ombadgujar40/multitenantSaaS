@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Users, FolderKanban, CheckSquare, TrendingUp } from "lucide-react";
+import { Users, FolderKanban, CheckSquare, Calendar } from "lucide-react";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 
 const statsData = [
@@ -23,27 +24,19 @@ const pieData = [
 
 export default function CustAdminDashboard() {
 
-  const { role } = useAuth()
+  const { token } = useAuth()
   const navigate = useNavigate()
   useEffect(() => {
-    if (!localStorage.getItem("token")) {
-      navigate("/")
+    if (!token) {
+      navigate('/login')
     }
-    // Wait until role is actually loaded (not null or undefined)
-    if (role === undefined || role === null) return;
-
-    if (role !== "customer") {
-      console.log("not same");
-      navigate("/");
-    }
-  }, [role, navigate]);
-
+  }, [token])
 
   const stats = [
-    { title: "Total Employees", value: "124", icon: Users, change: "+12%", color: "text-primary" },
-    { title: "Active Projects", value: "28", icon: FolderKanban, change: "+8%", color: "text-accent" },
-    { title: "Tasks Completed", value: "856", icon: CheckSquare, change: "+23%", color: "text-success" },
-    { title: "Revenue", value: "$124k", icon: TrendingUp, change: "+18%", color: "text-primary" },
+    { title: "Active Projects", value: "12", icon: FolderKanban, change: "+2 this month", color: "text-primary" },
+    { title: "Completed Projects", value: "8", icon: CheckSquare, change: "+3 this month", color: "text-success" },
+    { title: "Teams Engaged", value: "5", icon: Users, change: "+1 new team", color: "text-accent" },
+    { title: "Upcoming Deadlines", value: "4", icon: Calendar, change: "next 7 days", color: "text-warning" },
   ];
 
   return (

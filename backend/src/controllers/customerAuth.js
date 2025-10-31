@@ -1,5 +1,5 @@
 import express from "express"
-import { login, register } from "../routes/custAuth.js"
+import { register } from "../routes/custAuth.js"
 
 const router = express.Router()
 
@@ -8,6 +8,5 @@ router.get("/", (req, res) => {
 })
 
 router.post("/register", register)
-router.post("/login", login)
 
 export default router

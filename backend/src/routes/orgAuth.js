@@ -29,4 +29,27 @@ export const register = async (req, res) => {
     }
 }
 
+export const getAll = async (req, res) => {
+    try {
+        const resp = await prisma.organization.findMany({
+            select: { id: true, name: true }
+        });
+
+        res.status(200).json(resp);
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+export const getOne = async (req, res) => {
+    const { id } = req.params
+    try {
+        const resp = await prisma.organization.findUnique({where: {id: Number(id)}})
+
+        res.status(200).json(resp);
+    } catch (error) {
+        console.log(error)
+    }
+}
+
 

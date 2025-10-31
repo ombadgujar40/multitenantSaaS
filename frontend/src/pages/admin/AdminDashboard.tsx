@@ -21,20 +21,7 @@ const pieData = [
 ];
 
 export default function AdminDashboard() {
-  const { role, token } = useAuth()
-  const navigate = useNavigate()
-  useEffect(() => {
-    if(!localStorage.getItem("token")) {
-      navigate("/")
-    }
-    // Wait until role is actually loaded (not null or undefined)
-    if (role === undefined || role === null) return;
 
-    if (role !== "admin") {
-      console.log("not same");
-      navigate("/");
-    }
-  }, [role, navigate]);
 
 
 

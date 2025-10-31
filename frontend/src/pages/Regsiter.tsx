@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,32 +7,45 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Building2, Loader2 } from "lucide-react";
 import axios from "axios";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("customer");
-  const [orgName, setOrgName] = useState(""); // only for organization role
+  const [designation, setDesignation] = useState("");
+  const [orgName, setOrgName] = useState(""); // input or select depending on role
   const [isLoad, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const [organizationList, setOrganizationList] = useState<string[]>([]);
 
+  // Fetch all organizations
+  useEffect(() => {
+    axios
+      .get("http://127.0.0.1:2000/organization/all")
+      .then((res) => setOrganizationList(res.data.map((org: any) => org.name)))
+      .catch((err) => console.error("Error fetching orgs:", err));
+  }, []);
+
+  // Handle Register
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const payload = {
-        name,
-        email,
-        password,
-        role,
-      };
+      if (role === "organization") {
+        // Register as new organization
+        const orgData = { name: orgName };
+        const res = await axios.post("http://127.0.0.1:2000/organization/register", orgData);
+        toast.success("Organization registered successfully!");
+      } else {
+        // Register employee or customer under existing organization
+        const payload = { orgName, name, email, password, role, designation };
+        const res = await axios.post(`http://127.0.0.1:2000/${role}/register`, payload);
+        toast.success("Registration successful!");
+      }
 
-
-      const response = await axios.post(`http://127.0.0.1:2000/${payload.role}/register`);
-
-      toast.success("Registration successful!");
       navigate("/login");
     } catch (error) {
       console.error("Register Error:", error);
@@ -61,90 +74,32 @@ export default function Register() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Name */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="h-11"
-                />
-              </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-11"
-                />
-              </div>
-
-              {/* Password */}
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-11"
-                />
-              </div>
-
-              {/* Role - Radio Buttons */}
+              {/* Role */}
               <div className="space-y-2">
                 <Label>Register as</Label>
                 <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="role"
-                      value="organization"
-                      checked={role === "organization"}
-                      onChange={() => setRole("organization")}
-                      className="accent-primary"
-                    />
-                    Organization
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="role"
-                      value="employee"
-                      checked={role === "employee"}
-                      onChange={() => setRole("employee")}
-                      className="accent-primary"
-                    />
-                    Employee
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="role"
-                      value="customer"
-                      checked={role === "customer"}
-                      onChange={() => setRole("customer")}
-                      className="accent-primary"
-                    />
-                    Customer
-                  </label>
+                  {["organization", "employee", "customer"].map((r) => (
+                    <label key={r} className="flex items-center gap-2 capitalize">
+                      <input
+                        type="radio"
+                        name="role"
+                        value={r}
+                        checked={role === r}
+                        onChange={() => {
+                          setRole(r);
+                          setOrgName("");
+                        }}
+                        className="accent-primary"
+                      />
+                      {r}
+                    </label>
+                  ))}
                 </div>
               </div>
 
-              {/* Organization Name - only if role is organization */}
-              {role === "organization" && (
+              {/* Organization Field */}
+              {role === "organization" ? (
+                // If user is registering as organization
                 <div className="space-y-2">
                   <Label htmlFor="orgName">Organization Name</Label>
                   <Input
@@ -157,7 +112,91 @@ export default function Register() {
                     className="h-11"
                   />
                 </div>
+              ) : (
+                // If employee or customer
+                <div className="space-y-2">
+                  <Label htmlFor="orgSelect">Select Organization</Label>
+                  <Select value={orgName} onValueChange={(value) => setOrgName(value)}>
+                    <SelectTrigger id="orgSelect" className="h-11">
+                      <SelectValue placeholder="Choose organization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {organizationList.length > 0 ? (
+                        organizationList.map((org, index) => (
+                          <SelectItem key={index} value={org}>
+                            {org}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>
+                          No organizations found
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
+
+              {/* Name */}
+              {role !== "organization" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="John Doe"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                  </div>
+                  {role == 'employee' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="designation">Designation</Label>
+                      <Input
+                        id="designation"
+                        type="text"
+                        placeholder="Manager"
+                        value={designation}
+                        onChange={(e) => setDesignation(e.target.value)}
+                        required
+                        className="h-11"
+                      />
+                    </div>
+                  )}
+
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                  </div>
+                </>
+              )}
+
 
               {/* Submit */}
               <Button
@@ -188,7 +227,7 @@ export default function Register() {
         <p className="mt-8 text-center text-xs text-muted-foreground">
           Secure and encrypted registration process
         </p>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

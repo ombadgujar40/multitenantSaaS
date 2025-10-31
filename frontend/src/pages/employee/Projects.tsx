@@ -34,10 +34,6 @@ export default function Projects() {
           <h1 className="text-4xl font-bold mb-2">Projects</h1>
           <p className="text-muted-foreground">Manage and track all your projects</p>
         </div>
-        <Button className="gradient-primary shadow-glow">
-          <Plus className="mr-2 h-4 w-4" />
-          New Project
-        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
