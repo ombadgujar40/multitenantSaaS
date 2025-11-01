@@ -22,7 +22,6 @@ export default function Employees() {
   const [employees, setEmployees] = useState([]);
   const [selectedEmp, setSelectedEmp] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [organizationList, setOrganizationList] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [orgName, setOrgName] = useState();
 

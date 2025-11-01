@@ -58,7 +58,6 @@ export const Sidebar = () => {
     { to: "/admin/employees", label: "Employees", icon: Users },
     { to: "/admin/customers", label: "Customers", icon: Users },
     { to: "/admin/projects", label: "Projects", icon: FolderKanban },
-    { to: "/admin/tasks", label: "Tasks", icon: CheckSquare },
     { to: "/admin/chats", label: "Chat", icon: MessageSquare },
     { to: "/admin/reports", label: "Reports", icon: BarChart3 },
     { to: "/admin/settings", label: "Settings", icon: Settings },

@@ -30,13 +30,15 @@ export const register = async (req, res) => {
 }
 
 
-export const getCust = async (req, res) => {
-  const { orgId, role } = req.query
+export const getTasks = async (req, res) => {
+  const { role } = req.query
+  const { organisation } = req.user
+
   try {
     if (role != "admin") {
       res.status(300).send("Unathourized Acess")
     }
-    const resp = await prisma.customer.findMany({ where: { orgId: Number(orgId) }, select: { id: true, name: true, email: true, projects: true, createdAt: true, orgId: true, org: true } })
+    const resp = await prisma.task.findMany({ where: {orgId: organisation}, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
     res.status(200).send(resp)
   } catch (error) {
     console.log(error)
@@ -44,7 +46,7 @@ export const getCust = async (req, res) => {
   }
 }
 
-export const updateCust = async (req, res) => {
+export const updateTasks = async (req, res) => {
   const { id } = req.params;
   const { name, email } = req.body;
   const updated = await prisma.customer.update({
@@ -54,7 +56,7 @@ export const updateCust = async (req, res) => {
   res.json(updated);
 }
 
-export const deleteCust = async (req, res) => {
+export const deleteTasks = async (req, res) => {
   const { id } = req.params;
   await prisma.customer.delete({ where: { id: Number(id) } });
   res.json({ message: "Deleted successfully" });

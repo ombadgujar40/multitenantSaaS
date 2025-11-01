@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext.jsx";
 import { EmpProvider } from "@/contexts/EmpContext.jsx";
+import { CustProvider } from "@/contexts/CustContext.jsx"
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import Login from "./pages/Login";
@@ -32,45 +33,46 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <EmpProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
+        <CustProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
 
-              <Route path="/admin" element={<DashboardLayout />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="employees" element={<Employees />} />
-                <Route path="customers" element={<Customers />} />
-                <Route path="projects" element={<Projects />} />
-                <Route path="chats" element={<Chat />} />
-                <Route path="tasks" element={<Task />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="settings" element={<Settings />} />
-              </Route>
+                <Route path="/admin" element={<DashboardLayout />}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="employees" element={<Employees />} />
+                  <Route path="customers" element={<Customers />} />
+                  <Route path="projects" element={<Projects />} />
+                  <Route path="chats" element={<Chat />} />
+                  <Route path="reports" element={<Reports />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
 
 
-              <Route path="/employee" element={<DashboardLayout />}>
-                <Route index element={<EmpAdminDashboard />} />
-                <Route path="projects" element={<EmpProjects />} />
-              </Route>
+                <Route path="/employee" element={<DashboardLayout />}>
+                  <Route index element={<EmpAdminDashboard />} />
+                  <Route path="projects" element={<EmpProjects />} />
+                </Route>
 
-              <Route path="/customer" element={<DashboardLayout />}>
-                <Route index element={<CustAdminDashboard />} />
-                <Route path="projects" element={<CustProject />} />
-              </Route>
+                <Route path="/customer" element={<DashboardLayout />}>
+                  <Route index element={<CustAdminDashboard />} />
+                  <Route path="projects" element={<CustProject />} />
+                </Route>
 
-              <Route path="/logout" element={<Logout />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/admin/register" element={<AdminRegister />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+                <Route path="/logout" element={<Logout />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/admin/register" element={<AdminRegister />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </CustProvider>
       </EmpProvider>
     </AuthProvider>
   </QueryClientProvider>

@@ -1,9 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Users, FolderKanban, CheckSquare, TrendingUp } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useFetcher, useNavigate } from "react-router-dom";
+import { empAuth } from "../../contexts/EmpContext"
+import axios from "axios";
 
 const statsData = [
   { name: "Jan", projects: 12, tasks: 45 },
@@ -14,22 +16,52 @@ const statsData = [
   { name: "Jun", projects: 25, tasks: 85 },
 ];
 
-const pieData = [
-  { name: "Completed", value: 45, color: "hsl(var(--success))" },
-  { name: "In Progress", value: 30, color: "hsl(var(--primary))" },
-  { name: "Pending", value: 25, color: "hsl(var(--warning))" },
-];
+
 
 export default function AdminDashboard() {
+  const { data } = empAuth()
+  const [empNum, setEmpNum] = useState()
+  const [pendProjLen, setPendProjLen] = useState()
+  const [actProjLen, setActProjLen] = useState()
+  const [compProjLen, setCompProjLen] = useState()
 
+  useEffect(() => {
+    const tok = localStorage.getItem('token')
+
+    const fetchStats = async () => {
+      if (data) setEmpNum(data.length)
+      const proComplete = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+        headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin", status: "completed" }
+      });
+      setCompProjLen(proComplete.data.length)
+      const proActive = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+        headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin", status: "active" }
+      });
+      setActProjLen(proActive.data.length)
+      const proPending = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+        headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin", status: "pending" }
+      });
+      setPendProjLen(proPending.data.length)
+
+      
+    }
+
+    if (tok) fetchStats()
+  }, [data])
 
 
 
   const stats = [
-    { title: "Total Employees", value: "124", icon: Users, change: "+12%", color: "text-primary" },
-    { title: "Active Projects", value: "28", icon: FolderKanban, change: "+8%", color: "text-accent" },
-    { title: "Tasks Completed", value: "856", icon: CheckSquare, change: "+23%", color: "text-success" },
-    { title: "Revenue", value: "$124k", icon: TrendingUp, change: "+18%", color: "text-primary" },
+    { title: "Total Employees", value: empNum, icon: Users, change: "+12%", color: "text-primary" },
+    { title: "Pending Projects", value: pendProjLen, icon: FolderKanban, change: "+8%", color: "text-warning" },
+    { title: "Active Projects", value: actProjLen, icon: CheckSquare, change: "+23%", color: "text-warning" },
+    { title: "Completed Projects", value: compProjLen, icon: CheckSquare, change: "+23%", color: "text-success" },
+  ];
+
+  const pieData = [
+    { name: "Completed", value: compProjLen, color: "hsl(var(--success))" },
+    { name: "In Progress", value: actProjLen, color: "hsl(var(--primary))" },
+    { name: "Pending", value: pendProjLen, color: "hsl(var(--warning))" },
   ];
 
   return (
@@ -50,7 +82,6 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stat.value}</div>
-              <p className="text-xs text-success mt-1">{stat.change} from last month</p>
             </CardContent>
           </Card>
         ))}

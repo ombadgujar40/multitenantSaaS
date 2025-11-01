@@ -6,6 +6,8 @@ import orgauthroutes from "./controllers/organizationAuth.js"
 import empauthroutes from "./controllers/employeeAuth.js"
 import customerroutes from "./controllers/customerAuth.js"
 import allroute from "./controllers/generalAuth.js"
+import projectRoute from "./controllers/projectsControler.js"
+import taskRoute from "./controllers/taskControler.js"
 
 
 const app = express()
@@ -14,6 +16,8 @@ app.use(express.json())
 
 app.use(allroute)
 app.use(login)
+app.use("/project", projectRoute)
+app.use("/task", taskRoute)
 app.use("/organization", orgauthroutes)
 app.use("/employee", empauthroutes)
 app.use("/customer", customerroutes)

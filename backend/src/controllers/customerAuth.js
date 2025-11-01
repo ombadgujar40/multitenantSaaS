@@ -1,5 +1,5 @@
 import express from "express"
-import { register } from "../routes/custAuth.js"
+import { register, deleteCust, updateCust, getCust } from "../routes/custAuth.js"
 
 const router = express.Router()
 
@@ -8,5 +8,8 @@ router.get("/", (req, res) => {
 })
 
 router.post("/register", register)
+router.get("/getAllCusts", getCust)
+router.put("/update/:id", updateCust)
+router.delete("/delete/:id", deleteCust)
 
 export default router
