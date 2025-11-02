@@ -18,6 +18,7 @@ export const CustProvider = ({ children }) => {
                     }
                 })
                 const org = data.data.data.orgId
+                if (!org) return
                 const orgName = await axios.get(`http://127.0.0.1:2000/organization/one/${org}`)
 
                 if (data.data.role == 'admin') {

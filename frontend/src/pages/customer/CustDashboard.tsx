@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Users, FolderKanban, CheckSquare, Calendar } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { custAuth } from "@/contexts/CustContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -25,17 +26,42 @@ const pieData = [
 export default function CustAdminDashboard() {
 
   const { token } = useAuth()
+  const { data } = custAuth()
   const navigate = useNavigate()
+  const [CompLen, setCompProjLen] = useState()
+  const [ActLen, setActProjLen] = useState()
+  const [PendLen, setPendProjLen] = useState()
   useEffect(() => {
     if (!token) {
       navigate('/login')
     }
+    const fetchStats = async () => {
+      const data = await axios.get(`http://127.0.0.1:2000/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      const proComplete = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "completed", id: data.data.id }
+      });
+      setCompProjLen(proComplete.data.length)
+      const proActive = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "active", id: data.data.id }
+      });
+      setActProjLen(proActive.data.length)
+      const proPending = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "pending", id: data.data.id }
+      });
+      setPendProjLen(proPending.data.length)
+    }
+
+    fetchStats()
   }, [token])
 
   const stats = [
-    { title: "Active Projects", value: "12", icon: FolderKanban, change: "+2 this month", color: "text-primary" },
-    { title: "Completed Projects", value: "8", icon: CheckSquare, change: "+3 this month", color: "text-success" },
-    { title: "Teams Engaged", value: "5", icon: Users, change: "+1 new team", color: "text-accent" },
+    { title: "Active Projects", value: ActLen, icon: FolderKanban, change: "+2 this month", color: "text-primary" },
+    { title: "Completed Projects", value: CompLen, icon: CheckSquare, change: "+3 this month", color: "text-success" },
+    { title: "Pending Projects", value: PendLen, icon: CheckSquare, change: "+3 this month", color: "text-warning" },
     { title: "Upcoming Deadlines", value: "4", icon: Calendar, change: "next 7 days", color: "text-warning" },
   ];
 

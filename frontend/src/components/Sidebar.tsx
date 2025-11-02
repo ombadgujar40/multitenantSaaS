@@ -77,7 +77,7 @@ export const Sidebar = () => {
   const customerLinks = [
     { to: "/customer", label: "Dashboard", icon: LayoutDashboard },
     { to: "/customer/projects", label: "My Projects", icon: FolderKanban },
-    { to: "/customer/tasks", label: "Deliverables", icon: CheckSquare },
+    { to: "/customer/completed", label: "Deliverables", icon: CheckSquare },
     { to: "/customer/chats", label: "Support / Chat", icon: MessageSquare },
     { to: "/customer/reports", label: "Progress", icon: BarChart3 },
     { to: "/customer/settings", label: "Settings", icon: Settings },

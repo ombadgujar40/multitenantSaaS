@@ -31,31 +31,46 @@ export const register = async (req, res) => {
 
 
 export const getProjects = async (req, res) => {
-  const { role } = req.query
-  const { organisation } = req.user
+  const { role, custId } = req.query
+  const { organisation, id } = req.user
 
   try {
-    if (role != "admin") {
-      res.status(300).send("Unathourized Acess")
+    switch (role) {
+      case "admin":
+        const adminResp = await prisma.project.findMany({ where: { orgId: organisation }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
+        res.status(200).send(adminResp)
+        break;
+      case "customer":
+        const custResp = await prisma.project.findMany({ where: { orgId: organisation, customerId: id }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
+        res.status(200).send(custResp)
+      default:
+        res.status(300).send("Unathourized Acess")
+        break;
     }
-    const resp = await prisma.project.findMany({ where: { orgId: organisation }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
-    res.status(200).send(resp)
-  } catch (error) {
+  } catch(error) {
     console.log(error)
-    res.json({ msg: error })
   }
 }
 
 export const getProjectsStats = async (req, res) => {
-  const { role, status } = req.query
+  const { role, status, custId } = req.query
   const { organisation } = req.user
 
   try {
-    if (role != "admin") {
-      res.status(300).send("Unathourized Acess")
+
+
+    switch (role) {
+      case "admin":
+        const adminResp = await prisma.project.findMany({ where: { orgId: organisation, status: status }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
+        res.status(200).send(adminResp)
+        break;
+      case "customer":
+        const custResp = await prisma.project.findMany({ where: { orgId: organisation, status: status, customerId: custId }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
+        res.status(200).send(custResp)
+      default:
+        res.status(300).send("Unathourized Acess")
+        break;
     }
-    const resp = await prisma.project.findMany({ where: { orgId: organisation, status: status }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
-    res.status(200).send(resp)
   } catch (error) {
     console.log(error)
     res.json({ msg: error })

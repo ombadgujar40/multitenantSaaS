@@ -73,7 +73,7 @@ export const getUser = async (req, res) => {
                     break;
 
                 case "customer":
-                    const cust = await prisma.customer.findUnique({ where: { id: data.id }, select: { name: true, email: true } })
+                    const cust = await prisma.customer.findUnique({ where: { id: data.id }, select: { name: true, email: true, id: true } })
                     res.status(200).json({ data: cust, role: "customer" })
                     break;
 
