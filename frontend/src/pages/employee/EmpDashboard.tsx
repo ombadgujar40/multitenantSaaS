@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Users, FolderKanban, CheckSquare, Activity, Clock } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import axios, { all } from "axios";
 
 
 const statsData = [
@@ -22,21 +23,53 @@ const pieData = [
 ];
 
 export default function EmpAdminDashboard() {
-
+  const [tasks, setTasks] = useState([])
+  const [CompLen, setCompProjLen] = useState(0)
+  const [ActLen, setActProjLen] = useState(0)
+  const [PendLen, setPendProjLen] = useState(0)
   const { token } = useAuth()
   const navigate = useNavigate()
   useEffect(() => {
     if (!token) {
       navigate('/login')
     }
+    const fetchTasks = async () => {
+      const tk = token || localStorage.getItem('token')
+      const data = await axios.get(`http://127.0.0.1:2000/me`, {
+        headers: {
+          Authorization: `Bearer ${tk}`
+        }
+      })
+      const allTasks = await axios.get("http://127.0.0.1:2000/task/getAllTasks", {
+        headers: { Authorization: `Bearer ${tk}` }, params: { role: "employee", id: data.data.data.id }
+      });
+      setTasks(allTasks.data)
+
+      const proComplete = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "completed", id: data.data.data.id }
+      });
+      setCompProjLen(proComplete.data.length)
+      const proActive = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "active", id: data.data.data.id }
+      });
+      setActProjLen(proActive.data.length)
+      const proPending = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "pending", id: data.data.data.id }
+      });
+      setPendProjLen(proPending.data.length)
+    }
+
+    fetchTasks()
+
+
   }, [token])
 
 
   const stats = [
-    { title: "Assigned Projects", value: "3", icon: FolderKanban, color: "text-primary" },
-    { title: "Tasks Completed", value: "12", icon: CheckSquare, color: "text-success" },
-    { title: "Tasks In Progress", value: "5", icon: Activity, color: "text-accent" },
-    { title: "Pending Tasks", value: "7", icon: Clock, color: "text-warning" },
+    { title: "Assigned Projects", value: `${CompLen+PendLen+ActLen}`, icon: FolderKanban, color: "text-primary" },
+    { title: "Tasks Completed", value: tasks.filter((e) => { if (e.status == "completed") return e }).length, icon: CheckSquare, color: "text-success" },
+    { title: "Tasks In Progress", value: tasks.filter((e) => { if (e.status == "in_progress") return e }).length, icon: Activity, color: "text-accent" },
+    { title: "Pending Tasks", value: tasks.filter((e) => { if (e.status == "pending") return e }).length, icon: Clock, color: "text-warning" },
   ];
 
 

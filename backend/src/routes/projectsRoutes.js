@@ -43,6 +43,7 @@ export const getProjects = async (req, res) => {
       case "customer":
         const custResp = await prisma.project.findMany({ where: { orgId: organisation, customerId: id }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
         res.status(200).send(custResp)
+        break;
       default:
         res.status(300).send("Unathourized Acess")
         break;

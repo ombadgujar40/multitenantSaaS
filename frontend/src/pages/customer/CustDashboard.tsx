@@ -26,7 +26,6 @@ const pieData = [
 export default function CustAdminDashboard() {
 
   const { token } = useAuth()
-  const { data } = custAuth()
   const navigate = useNavigate()
   const [CompLen, setCompProjLen] = useState()
   const [ActLen, setActProjLen] = useState()

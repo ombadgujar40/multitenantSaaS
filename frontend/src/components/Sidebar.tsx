@@ -66,8 +66,7 @@ export const Sidebar = () => {
   // 🔹 Employee Links
   const employeeLinks = [
     { to: "/employee", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/employee/projects", label: "My Projects", icon: FolderKanban },
-    { to: "/employee/tasks", label: "My Tasks", icon: CheckSquare },
+    { to: "/employee/projects", label: "My Tasks", icon: FolderKanban },
     { to: "/employee/chats", label: "Chats", icon: MessageSquare },
     { to: "/employee/reports", label: "Reports", icon: BarChart3 },
     { to: "/employee/settings", label: "Settings", icon: Settings },

@@ -3,43 +3,51 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../config/prismaconfig.js"
 
 export const register = async (req, res) => {
-    try {
-        const {orgName, name, email, password } = req.body
+  try {
+    const { orgName, name, email, password } = req.body
 
-        const org = await prisma.organization.findUnique( { where: { name: orgName } } )
-        if(!org) return res.status(404).json({message: "Organizaion does not exists"})
-        const orgId = org.id
-        const user = await prisma.customer.findUnique({where:{email}})
-        if (user) return res.status(400).json({ message: "User already exist"})
+    const org = await prisma.organization.findUnique({ where: { name: orgName } })
+    if (!org) return res.status(404).json({ message: "Organizaion does not exists" })
+    const orgId = org.id
+    const user = await prisma.customer.findUnique({ where: { email } })
+    if (user) return res.status(400).json({ message: "User already exist" })
 
-        const hashespass = await bcrypt.hash(password, 10)
+    const hashespass = await bcrypt.hash(password, 10)
 
-        const createUser = await prisma.customer.create({
-            data: {
-                orgId,
-                name,
-                email,
-                password: hashespass,
-            }
-        })
+    const createUser = await prisma.customer.create({
+      data: {
+        orgId,
+        name,
+        email,
+        password: hashespass,
+      }
+    })
 
-        res.status(201).json({ message: "customer created successfully", createUser})
-    } catch (error) {
-        console.log(error)
-    }
+    res.status(201).json({ message: "customer created successfully", createUser })
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 
 export const getTasks = async (req, res) => {
-  const { role } = req.query
+  const { role, id } = req.query
   const { organisation } = req.user
 
   try {
-    if (role != "admin") {
-      res.status(300).send("Unathourized Acess")
+    if (role == "admin") {
+      const resp = await prisma.task.findMany({ where: { orgId: organisation }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
+      res.status(200).send(resp)
+    } else
+    if (role == "employee") {
+      const resp = await prisma.task.findMany({ where: {assignedTo: {id: Number(id)} }, select: {id: true, project: true, projectId: true, assignedTo: true, assignedToId: true, title: true, description: true, status: true, dueDate: true, createdAt: true } })
+      res.status(200).send(resp)
+    } else if(role="customer") {
+      res.status(201).send("customer role")
+    } else {
+      res.status(301).send("no role")
     }
-    const resp = await prisma.task.findMany({ where: {orgId: organisation}, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
-    res.status(200).send(resp)
+
   } catch (error) {
     console.log(error)
     res.json({ msg: error })

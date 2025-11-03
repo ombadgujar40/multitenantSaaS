@@ -18,7 +18,29 @@ export default function Login() {
   const { token, login } = useAuth();
   const navigate = useNavigate();
 
-  
+  useEffect(() => {
+
+    const navigateUser = async () => {
+      try {
+        const tk = token || localStorage.getItem("token");
+        if (!tk) return;
+
+        const res = await axios.get("http://127.0.0.1:2000/me", {
+          headers: {
+            Authorization: `Bearer ${tk}`,
+          },
+        });
+
+      navigate(`/${res.data.role}`)
+      } catch (error) {
+        console.log("Error fetching user data:", error);
+      }
+    }
+
+    if (token) navigateUser()
+  }, [token])
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
