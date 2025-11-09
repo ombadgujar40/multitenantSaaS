@@ -8,10 +8,10 @@ router.get("/", (req, res) => {
     res.send("Customer routes")
 })
 
-router.post("/register", register)
+router.post("/register", verifyToken, register)
 router.get("/getAllProjects", verifyToken, getProjects)
 router.get("/getProjectsStats", verifyToken, getProjectsStats)
-router.put("/update/:id", updateProject)
+router.put("/update/:projectId", verifyToken, updateProject)
 router.delete("/delete/:id", deleteProject)
 
 export default router

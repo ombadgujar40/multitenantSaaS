@@ -1,5 +1,5 @@
 import express from "express"
-import { register, deleteTasks, updateTasks, getTasks } from "../routes/taskRoutes.js"
+import { register, deleteTasks, updateTasks, getTasks, getProjectTasks } from "../routes/taskRoutes.js"
 import { verifyToken } from "../middleware/verifytoken.js"
 
 const router = express.Router()
@@ -10,6 +10,7 @@ router.get("/", (req, res) => {
 
 router.post("/register", register)
 router.get("/getAllTasks", verifyToken, getTasks)
+router.get("/getProjectTasks/:projectId", verifyToken, getProjectTasks)
 router.put("/update/:id", updateTasks)
 router.delete("/delete/:id", deleteTasks)
 

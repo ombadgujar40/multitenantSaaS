@@ -27,31 +27,32 @@ export default function CustAdminDashboard() {
 
   const { token } = useAuth()
   const navigate = useNavigate()
-  const [CompLen, setCompProjLen] = useState()
-  const [ActLen, setActProjLen] = useState()
-  const [PendLen, setPendProjLen] = useState()
+  const [CompLen, setCompProjLen] = useState(0)
+  const [ActLen, setActProjLen] = useState(0)
+  const [PendLen, setPendProjLen] = useState(0)
   useEffect(() => {
+    const tk = token || localStorage.getItem('token')
     if (!token) {
       navigate('/login')
     }
     const fetchStats = async () => {
       const data = await axios.get(`http://127.0.0.1:2000/me`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${tk}`
         }
       })
       const proComplete = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
-        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "completed", id: data.data.id }
+        headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "completed", id: data.data.data.id }
       });
-      setCompProjLen(proComplete.data.length)
+      setCompProjLen(proComplete.data.length || 0)
       const proActive = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
-        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "active", id: data.data.id }
+        headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "active", id:  data.data.data.id }
       });
-      setActProjLen(proActive.data.length)
+      setActProjLen(proActive.data.length || 0)
       const proPending = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
-        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "pending", id: data.data.id }
+        headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "pending", id:  data.data.data.id }
       });
-      setPendProjLen(proPending.data.length)
+      setPendProjLen(proPending.data.length || 0)
     }
 
     fetchStats()
@@ -61,7 +62,7 @@ export default function CustAdminDashboard() {
     { title: "Active Projects", value: ActLen, icon: FolderKanban, change: "+2 this month", color: "text-primary" },
     { title: "Completed Projects", value: CompLen, icon: CheckSquare, change: "+3 this month", color: "text-success" },
     { title: "Pending Projects", value: PendLen, icon: CheckSquare, change: "+3 this month", color: "text-warning" },
-    { title: "Upcoming Deadlines", value: "4", icon: Calendar, change: "next 7 days", color: "text-warning" },
+    { title: "Upcoming Deadlines", value: 0, icon: Calendar, change: "next 7 days", color: "text-warning" },
   ];
 
   return (

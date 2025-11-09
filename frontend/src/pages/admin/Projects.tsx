@@ -24,14 +24,22 @@ import { toast } from "sonner";
 import axios from "axios";
 import { empAuth } from "../../contexts/EmpContext";
 import { custAuth } from "../../contexts/CustContext";
+import ProjectModal from "@/components/ProjectModal.jsx";
+import { motion, AnimatePresence } from "framer-motion";
+// import { Button } from "@/components/ui/button";
+// import { Card } from "@/components/ui/card";
+
 
 export default function Projects() {
   const { token, org, data } = empAuth() || custAuth(); // support both contexts if needed
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeProject, setActiveProject] = useState(null);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isReject, setIsReject] = useState()
+  const role = 'admin'
 
   // -------- Fetch Projects ----------
   useEffect(() => {
@@ -39,7 +47,7 @@ export default function Projects() {
     const fetchProjects = async () => {
       try {
         const res = await axios.get("http://127.0.0.1:2000/project/getAllProjects", {
-          headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin" }
+          headers: { Authorization: `Bearer ${tok}` }, params: { role: role }
         });
         setProjects(res.data || []);
       } catch (error) {
@@ -55,11 +63,10 @@ export default function Projects() {
   // -------- Handlers ----------
   const handleAdd = () => {
     setSelectedProject({
+      projectId: "",
       name: "",
-      dueDate: "",
-      team: "",
-      progress: 0,
-      status: "active",
+      description: "",
+      status: "pending"
     });
     setIsEditMode(false);
     setIsOpen(true);
@@ -77,35 +84,26 @@ export default function Projects() {
   };
 
   // -------- Save (Add / Update) ----------
-  const handleSave = async () => {
+  const handleStatusChange = async (projectId, status) => {
+    const tok = token || localStorage.getItem('token')
     try {
-      if (isEditMode) {
-        const res = await axios.put(
-          `http://127.0.0.1:2000/project/update/${selectedProject.id}`,
-          selectedProject,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        setProjects((prev) =>
-          prev.map((p) =>
-            p.id === selectedProject.id ? { ...p, ...res.data.project } : p
-          )
-        );
-        toast.success("Project updated successfully!");
-      } else {
-        const payload = { ...selectedProject, orgName: org };
-
-        const res = await axios.post(
-          `http://127.0.0.1:2000/project/create`,
-          payload,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        setProjects((prev) => [...prev, res.data.project]);
-        toast.success("Project added successfully!");
+      const res = await axios.put(
+        `http://127.0.0.1:2000/project/update/${projectId}`,
+        { status: status },
+        { headers: { Authorization: `Bearer ${tok}` } }
+      );
+      try {
+        const res = await axios.get("http://127.0.0.1:2000/project/getAllProjects", {
+          headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin" }
+        });
+        setProjects(res.data || []);
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to fetch projects");
       }
+      toast.success("Project updated successfully!");
 
-      setIsOpen(false);
+
     } catch (error) {
       console.error(error);
       toast.error("Action failed! Check console for details.");
@@ -154,16 +152,56 @@ export default function Projects() {
           <Card
             key={project.id}
             className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+            onClick={() => {
+              setActiveProject(project);
+              setIsModalOpen(true);
+            }}
           >
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <FolderKanban className="h-6 w-6 text-primary" />
                 </div>
-                <Badge className={statusColors[project.status]}>
+
+                {/* Show buttons if status = pending, else show badge */}
+                {project.status === "pending" ? (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-green-600 border-green-600 hover:bg-green-50 h-7 px-2 text-xs"
+                      onClick={() => handleStatusChange(project.id, "active")}
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 border-red-600 hover:bg-red-50 h-7 px-2 text-xs"
+                      onClick={() => handleStatusChange(project.id, "rejected")}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                ) : project.status == 'rejected' ? (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-green-600 border-green-600 hover:bg-green-50 h-7 px-2 text-xs"
+                      onClick={() => handleStatusChange(project.id, "active")}
+                    >
+                      Accept
+                    </Button>
+                    <Badge className={statusColors[project.status]}>
+                      {project.status}
+                    </Badge>
+                  </div>
+                ) : (<Badge className={statusColors[project.status]}>
                   {project.status}
-                </Badge>
+                </Badge>)}
               </div>
+
               <CardTitle className="mt-4">{project.name}</CardTitle>
             </CardHeader>
 
@@ -190,15 +228,26 @@ export default function Projects() {
                       : "No due date"}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span>{project.team || 0} members</span>
-                </div>
               </div>
             </CardContent>
           </Card>
+
+
         ))}
+
       </div>
+      {isModalOpen && (
+          <ProjectModal
+            open={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            project={activeProject}
+            token={localStorage.getItem('token')}
+            org={org}
+            isAdmin={true}
+            dt={data}
+            role={role}
+          />
+      )}
     </div>
   );
 }
