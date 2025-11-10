@@ -206,7 +206,7 @@ export default function Projects() {
             </CardHeader>
 
             <CardContent className="space-y-4 text-sm text-muted-foreground">
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Progress</span>
                   <span className="font-medium">{project.progress}%</span>
@@ -217,7 +217,7 @@ export default function Projects() {
                     style={{ width: `${project.progress}%` }}
                   />
                 </div>
-              </div>
+              </div> */}
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

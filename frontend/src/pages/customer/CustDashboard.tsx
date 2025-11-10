@@ -17,11 +17,7 @@ const statsData = [
   { name: "Jun", projects: 25, tasks: 85 },
 ];
 
-const pieData = [
-  { name: "Completed", value: 45, color: "hsl(var(--success))" },
-  { name: "In Progress", value: 30, color: "hsl(var(--primary))" },
-  { name: "Pending", value: 25, color: "hsl(var(--warning))" },
-];
+
 
 export default function CustAdminDashboard() {
 
@@ -35,28 +31,36 @@ export default function CustAdminDashboard() {
     if (!token) {
       navigate('/login')
     }
-    const fetchStats = async () => {
-      const data = await axios.get(`http://127.0.0.1:2000/me`, {
-        headers: {
-          Authorization: `Bearer ${tk}`
-        }
-      })
-      const proComplete = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
-        headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "completed", id: data.data.data.id }
-      });
-      setCompProjLen(proComplete.data.length || 0)
-      const proActive = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
-        headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "active", id:  data.data.data.id }
-      });
-      setActProjLen(proActive.data.length || 0)
-      const proPending = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
-        headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "pending", id:  data.data.data.id }
-      });
-      setPendProjLen(proPending.data.length || 0)
-    }
+
 
     fetchStats()
   }, [token])
+
+  const fetchStats = async () => {
+    const tk = token || localStorage.getItem('token')
+    const data = await axios.get(`http://127.0.0.1:2000/me`, {
+      headers: {
+        Authorization: `Bearer ${tk}`
+      }
+    })
+
+    const res = await axios.get(
+      "http://127.0.0.1:2000/project/getAllProjects",
+      {
+        headers: { Authorization: `Bearer ${tk}` },
+        params: { role: "customer" },
+      }
+    );
+
+    // console.log(res.data[0].status)
+    const proComplete = res.data.filter((e) => e.status =='completed')
+    const proActive = res.data.filter((e) => e.status =='active')
+    const proPending = res.data.filter((e) => e.status =='pending')
+    setActProjLen(proActive.length)
+    setCompProjLen(proComplete.length)
+    setPendProjLen(proPending.length)
+  }
+
 
   const stats = [
     { title: "Active Projects", value: ActLen, icon: FolderKanban, change: "+2 this month", color: "text-primary" },
@@ -64,6 +68,12 @@ export default function CustAdminDashboard() {
     { title: "Pending Projects", value: PendLen, icon: CheckSquare, change: "+3 this month", color: "text-warning" },
     { title: "Upcoming Deadlines", value: 0, icon: Calendar, change: "next 7 days", color: "text-warning" },
   ];
+
+  const pieData = [
+  { name: "Completed", value: CompLen, color: "hsl(var(--success))" },
+  { name: "In Progress", value: ActLen, color: "hsl(var(--primary))" },
+  { name: "Pending", value: PendLen, color: "hsl(var(--warning))" },
+];
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -83,7 +93,6 @@ export default function CustAdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stat.value}</div>
-              <p className="text-xs text-success mt-1">{stat.change} from last month</p>
             </CardContent>
           </Card>
         ))}

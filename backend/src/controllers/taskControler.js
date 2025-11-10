@@ -11,7 +11,8 @@ router.get("/", (req, res) => {
 router.post("/register", register)
 router.get("/getAllTasks", verifyToken, getTasks)
 router.get("/getProjectTasks/:projectId", verifyToken, getProjectTasks)
-router.put("/update/:id", updateTasks)
+// router.put("/update/:id", updateTasks)
+router.patch("/update/:id", verifyToken, updateTasks)
 router.delete("/delete/:id", deleteTasks)
 
 export default router

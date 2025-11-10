@@ -28,12 +28,12 @@ export const register = async (req, res) => {
 
 
 export const getTasks = async (req, res) => {
-  const { role, id } = req.query
-  const { organisation } = req.user
+  const { role } = req.query
+  const { organisation, id } = req.user
 
   try {
     if (role == "admin") {
-      const resp = await prisma.task.findMany({ where: { orgId: organisation }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
+      const resp = await prisma.task.findMany({ where: { assignedToId: id}, select: { id: true, title: true, description: true, status: true, createdAt: true } })
       res.status(200).send(resp)
     } else
       if (role == "employee") {
@@ -78,10 +78,10 @@ export const getProjectTasks = async (req, res) => {
 
 export const updateTasks = async (req, res) => {
   const { id } = req.params;
-  const { name, email } = req.body;
-  const updated = await prisma.customer.update({
+  const { status } = req.body;
+  const updated = await prisma.task.update({
     where: { id: Number(id) },
-    data: { name, email },
+    data: { status },
   });
   res.json(updated);
 }

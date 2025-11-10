@@ -101,6 +101,12 @@ export default function ProjectModalAlt({
 
   if (!project || !open) return null;
 
+  const progress = useMemo(() => {
+    if (tasks.length === 0) return 0;
+    const completed = tasks.filter(t => t.status === "completed").length;
+    return Math.round((completed / tasks.length) * 100);
+  }, [tasks]);
+
   return (
     <div className="w-[90vw] h-[90vh] bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col p-6">
       {/* Header */}
@@ -195,6 +201,23 @@ export default function ProjectModalAlt({
 
         {/* ---------- Right Panel: Task List ---------- */}
         <div className="bg-muted/30 rounded-xl p-5 overflow-y-auto">
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-medium text-primary">Project Progress</span>
+              <span className="text-sm text-muted-foreground">{progress}%</span>
+            </div>
+            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${progress < 40
+                    ? "bg-red-500"
+                    : progress < 80
+                      ? "bg-yellow-500"
+                      : "bg-green-500"
+                  }`}
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+          </div>
           <h3 className="text-lg font-semibold mb-4">Project Tasks</h3>
 
           {/* Task Items */}

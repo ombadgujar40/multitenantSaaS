@@ -16,63 +16,67 @@ const statsData = [
   { name: "Jun", projects: 25, tasks: 85 },
 ];
 
-const pieData = [
-  { name: "Completed", value: 45, color: "hsl(var(--success))" },
-  { name: "In Progress", value: 30, color: "hsl(var(--primary))" },
-  { name: "Pending", value: 25, color: "hsl(var(--warning))" },
-];
 
 export default function EmpAdminDashboard() {
   const [tasks, setTasks] = useState([])
   const [CompLen, setCompProjLen] = useState(0)
   const [ActLen, setActProjLen] = useState(0)
   const [PendLen, setPendProjLen] = useState(0)
+  const [uniqueProjectIds, setUniqueProjectIds] = useState([])
   const { token } = useAuth()
   const navigate = useNavigate()
   useEffect(() => {
     if (!token) {
       navigate('/login')
     }
-    const fetchTasks = async () => {
-      const tk = token || localStorage.getItem('token')
-      const data = await axios.get(`http://127.0.0.1:2000/me`, {
-        headers: {
-          Authorization: `Bearer ${tk}`
-        }
-      })
-      const allTasks = await axios.get("http://127.0.0.1:2000/task/getAllTasks", {
-        headers: { Authorization: `Bearer ${tk}` }, params: { role: "employee", id: data.data.data.id }
-      });
-      setTasks(allTasks.data)
-
-      const proComplete = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
-        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "completed", id: data.data.data.id }
-      });
-      setCompProjLen(proComplete.data.length)
-      const proActive = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
-        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "active", id: data.data.data.id }
-      });
-      setActProjLen(proActive.data.length)
-      const proPending = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
-        headers: { Authorization: `Bearer ${token}` }, params: { role: "customer", status: "pending", id: data.data.data.id }
-      });
-      setPendProjLen(proPending.data.length)
-    }
-
     fetchTasks()
 
 
   }, [token])
 
+  const fetchTasks = async () => {
+    const tk = token || localStorage.getItem('token')
+    const data = await axios.get(`http://127.0.0.1:2000/me`, {
+      headers: {
+        Authorization: `Bearer ${tk}`
+      }
+    })
+    const allTasks = await axios.get("http://127.0.0.1:2000/task/getAllTasks", {
+      headers: { Authorization: `Bearer ${tk}` }, params: { role: "employee", id: data.data.data.id }
+    });
+    const employeeId = data.data.data.id;
+    const employeeTasks = tasks.filter(t => t.assignedTo?.id === employeeId);
+    const uniqueProjectIds = [...new Set(employeeTasks.map(t => t.project?.id))];
+    setUniqueProjectIds(uniqueProjectIds)
+    setTasks(allTasks.data)
+
+    const proComplete = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+      headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "completed", id: data.data.data.id }
+    });
+    setCompProjLen(proComplete.data.length)
+    const proActive = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+      headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "active", id: data.data.data.id }
+    });
+    setActProjLen(proActive.data.length)
+    const proPending = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+      headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "pending", id: data.data.data.id }
+    });
+    setPendProjLen(proPending.data.length)
+  }
+  fetchTasks()
 
   const stats = [
-    { title: "Assigned Projects", value: `${CompLen+PendLen+ActLen}`, icon: FolderKanban, color: "text-primary" },
+    { title: "Assigned Projects", value: `${uniqueProjectIds.length}`, icon: FolderKanban, color: "text-primary" },
     { title: "Tasks Completed", value: tasks.filter((e) => { if (e.status == "completed") return e }).length, icon: CheckSquare, color: "text-success" },
     { title: "Tasks In Progress", value: tasks.filter((e) => { if (e.status == "in_progress") return e }).length, icon: Activity, color: "text-accent" },
     { title: "Pending Tasks", value: tasks.filter((e) => { if (e.status == "pending") return e }).length, icon: Clock, color: "text-warning" },
   ];
 
-
+  const pieData = [
+    { name: "Completed", value: tasks.filter((e) => { if (e.status == "completed") return e }).length, color: "hsl(var(--success))" },
+    { name: "In Progress", value: tasks.filter((e) => { if (e.status == "in_progress") return e }).length, color: "hsl(var(--primary))" },
+    { name: "Pending", value: tasks.filter((e) => { if (e.status == "pending") return e }).length, color: "hsl(var(--warning))" },
+  ];
   return (
     <div className="space-y-8 animate-fade-in">
       <div>

@@ -68,7 +68,6 @@ export const Sidebar = () => {
     { to: "/employee", label: "Dashboard", icon: LayoutDashboard },
     { to: "/employee/projects", label: "My Tasks", icon: FolderKanban },
     { to: "/employee/chats", label: "Chats", icon: MessageSquare },
-    { to: "/employee/reports", label: "Reports", icon: BarChart3 },
     { to: "/employee/settings", label: "Settings", icon: Settings },
   ];
 
@@ -78,7 +77,6 @@ export const Sidebar = () => {
     { to: "/customer/projects", label: "My Projects", icon: FolderKanban },
     { to: "/customer/completed", label: "Deliverables", icon: CheckSquare },
     { to: "/customer/chats", label: "Support / Chat", icon: MessageSquare },
-    { to: "/customer/reports", label: "Progress", icon: BarChart3 },
     { to: "/customer/settings", label: "Settings", icon: Settings },
   ];
 

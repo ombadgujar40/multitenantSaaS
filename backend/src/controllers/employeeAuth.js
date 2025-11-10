@@ -5,7 +5,7 @@ const router = express.Router()
 
 router.post("/register", register)
 router.get("/getAllEmps", getEmps)
-router.put("/update/:id", updateEmp)
+router.put("/update/:id", verifyToken, updateEmp)
 router.delete("/delete/:id", deleteEmp)
 
 export default router

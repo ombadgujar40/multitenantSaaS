@@ -60,7 +60,7 @@ export const getProjectsStats = async (req, res) => {
         res.status(200).send(adminResp)
         break;
       case "customer":
-        const custResp = await prisma.project.findMany({ where: { orgId: organisation, status: status, customerId: custId }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, customerId } })
+        const custResp = await prisma.project.findMany({ where: { orgId: organisation, customerId: custId }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, customerId } })
         res.status(200).send(custResp)
       default:
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ export default function Projects() {
   const [isOpen, setIsOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const navigate  = useNavigate()
 
   // -------- Fetch Projects ----------
   const fetchProjects = async (tok) => {
@@ -152,7 +153,7 @@ export default function Projects() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge>{project.status}</Badge>
-                  <Link to={`${project.id}`}>
+                  <Link to={`${project.id}`} className="flex items-center">
                   <Badge className={"cursor-pointer"}>View</Badge>
                   </Link>
                 </div>
