@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -26,147 +27,6 @@ import axios from "axios";
 import { empAuth } from "../../contexts/EmpContext";
 import { custAuth } from "../../contexts/CustContext";
 
-// ------------------ Project Viewer Modal ------------------
-function ProjectViewerModal({ open, onClose, project, token }) {
-  const [tasks, setTasks] = useState([]);
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    if (!open || !project) return;
-    const fetchTasks = async () => {
-      try {
-        const res = await axios.get(
-          `http://127.0.0.1:2000/task/getProjectTasks/${project.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setTasks(res.data || []);
-
-        // Calculate % completion
-        const completed = res.data.filter((t) => t.status == "completed").length;
-        const total = res.data.length;
-        setProgress(total ? Math.round((completed / total) * 100) : 0);
-      } catch (err) {
-        console.error(err);
-        toast.error("Unable to load project tasks");
-      }
-    };
-    fetchTasks();
-  }, [open, project, token]);
-
-  if (!project) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-primary">
-            {project.name}
-          </DialogTitle>
-          <DialogDescription>
-            {project.description || "No project description provided."}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
-          {/* Project Info */}
-          <div className="bg-muted/30 rounded-lg p-5">
-            <h3 className="text-lg font-semibold mb-3">Project Details</h3>
-
-            <p className="text-sm mb-2">
-              <span className="font-medium">Status:</span>{" "}
-              <Badge
-                className={
-                  project.status === "completed"
-                    ? "bg-green-500 text-white"
-                    : project.status === "active"
-                      ? "bg-primary text-white"
-                      : "bg-gray-300 text-black"
-                }
-              >
-                {project.status}
-              </Badge>
-            </p>
-
-            <p className="text-sm mb-2">
-              <span className="font-medium">Due Date:</span>{" "}
-              {project.dueDate
-                ? new Date(project.dueDate).toLocaleDateString()
-                : "Not set"}
-            </p>
-
-            <div className="mt-4">
-              <p className="font-medium mb-1">Project Progress</p>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <p className="text-xs mt-1 text-muted-foreground">
-                {progress}% completed
-              </p>
-            </div>
-          </div>
-
-          {/* Task List */}
-          <div className="bg-muted/30 rounded-lg p-5 overflow-y-auto max-h-[60vh]">
-            <h3 className="text-lg font-semibold mb-3">Tasks</h3>
-
-            {tasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No tasks assigned yet.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {tasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition"
-                  >
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-medium">{task.title}</h4>
-                      <Badge
-                        className={
-                          task.status === "completed"
-                            ? "bg-green-100 text-green-700"
-                            : task.status === "in_progress"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-gray-100 text-gray-600"
-                        }
-                      >
-                        {task.status}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {task.description || "No description"}
-                    </p>
-                    <div className="text-xs text-muted-foreground mt-2 flex justify-between">
-                      <span>
-                        Assigned to: {task.assignedTo?.name || "Unassigned"}
-                      </span>
-                      <span>
-                        {task.dueDate
-                          ? new Date(task.dueDate).toLocaleDateString()
-                          : "No due date"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ------------------ Main Projects Component ------------------
 export default function Projects() {
   const { token, org } = empAuth() || custAuth();
@@ -177,26 +37,25 @@ export default function Projects() {
   const [isEditMode, setIsEditMode] = useState(false);
 
   // -------- Fetch Projects ----------
+  const fetchProjects = async (tok) => {
+    try {
+      const res = await axios.get(
+        "http://127.0.0.1:2000/project/getAllProjects",
+        {
+          headers: { Authorization: `Bearer ${tok}` },
+          params: { role: "customer" },
+        }
+      );
+      setProjects(res.data || []);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to fetch projects");
+    }
+  };
   useEffect(() => {
     const tok = token || localStorage.getItem("token");
 
-    const fetchProjects = async () => {
-      try {
-        const res = await axios.get(
-          "http://127.0.0.1:2000/project/getAllProjects",
-          {
-            headers: { Authorization: `Bearer ${tok}` },
-            params: { role: "customer" },
-          }
-        );
-        setProjects(res.data || []);
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to fetch projects");
-      }
-    };
-
-    if (tok) fetchProjects();
+    if (tok) fetchProjects(tok);
   }, [token, org]);
 
   const handleAdd = () => {
@@ -209,11 +68,6 @@ export default function Projects() {
     setSelectedProject(project);
     setIsEditMode(true);
     setIsOpen(true);
-  };
-
-  const handleView = (project) => {
-    setSelectedProject(project);
-    setIsViewOpen(true);
   };
 
   const handleChange = (e) => {
@@ -237,7 +91,7 @@ export default function Projects() {
           selectedProject,
           { headers: { Authorization: `Bearer ${tok}` } }
         );
-        setProjects((prev) => [...prev, res.data.project]);
+        fetchProjects(tok)
         toast.success("Project added successfully!");
       }
 
@@ -256,7 +110,8 @@ export default function Projects() {
       await axios.delete(`http://127.0.0.1:2000/project/delete/${id}`, {
         headers: { Authorization: `Bearer ${tok}` },
       });
-      setProjects((prev) => prev.filter((p) => p.id !== id));
+      fetchProjects(tok)
+      // setProjects((prev) => prev.filter((p) => p.id !== id));
       toast.success("Project deleted successfully!");
     } catch (error) {
       console.error(error);
@@ -296,8 +151,10 @@ export default function Projects() {
                   <FolderKanban className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Status:</span>
                   <Badge>{project.status}</Badge>
+                  <Link to={`${project.id}`}>
+                  <Badge className={"cursor-pointer"}>View</Badge>
+                  </Link>
                 </div>
               </div>
               <CardTitle className="mt-4">{project.name}</CardTitle>
@@ -322,13 +179,6 @@ export default function Projects() {
               </div>
 
               <div className="flex justify-end gap-2 mt-4">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleView(project)}
-                >
-                  <Eye className="h-4 w-4 mr-1" /> View
-                </Button>
                 <Button
                   size="sm"
                   variant="outline"
@@ -388,13 +238,8 @@ export default function Projects() {
         </DialogContent>
       </Dialog>
 
-      {/* View Project Modal */}
-      <ProjectViewerModal
-        open={isViewOpen}
-        onClose={() => setIsViewOpen(false)}
-        project={selectedProject}
-        token={localStorage.getItem('token')}
-      />
+
     </div>
   );
 }
+

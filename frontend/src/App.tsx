@@ -27,6 +27,7 @@ import Employees from "./pages/admin/Employees.jsx"
 import Reports from "./pages/admin/Reports.jsx"
 import Settings from "./pages/admin/Settings.jsx"
 import Deleverables from "./pages/customer/Deleverables.jsx"
+import ProjectDetail from "./pages/customer/ProjectDetail.jsx"
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
                   <Route index element={<CustAdminDashboard />} />
                   <Route path="projects" element={<CustProject />} />
                   <Route path="completed" element={<Deleverables />} />
+                  <Route path="/customer/projects/:projId" element={<ProjectDetail/>}  />
                 </Route>
 
                 <Route path="/logout" element={<Logout />} />

@@ -5,7 +5,7 @@ import { prisma } from "../config/prismaconfig.js"
 export const register = async (req, res) => {
   try {
     const { name, description } = req.body
-    const {id, organisation} = req.user
+    const { id, organisation } = req.user
 
     const org = await prisma.organization.findUnique({ where: { id: organisation } })
     if (!org) return res.status(404).json({ message: "Organizaion does not exists" })
@@ -44,7 +44,7 @@ export const getProjects = async (req, res) => {
         res.status(300).send("Unathourized Acess")
         break;
     }
-  } catch(error) {
+  } catch (error) {
     console.log(error)
   }
 }
@@ -63,7 +63,7 @@ export const getProjectsStats = async (req, res) => {
         const custResp = await prisma.project.findMany({ where: { orgId: organisation, status: status, customerId: custId }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, customerId } })
         res.status(200).send(custResp)
       default:
-        
+
     }
   } catch (error) {
     res.json({ msg: error })
@@ -88,3 +88,12 @@ export const deleteProject = async (req, res) => {
 }
 
 
+export const getProjectDetail = async (req, res) => {
+  const { projId } = req.params;
+  try {
+    const resp = await prisma.project.findUnique({ where: { id: Number(projId) },select: {tasks: true, createdAt: true, description: true, status: true, name: true, id: true, org: true} })
+    res.status(200).send(resp)
+  } catch (error) {
+    console.log(error)
+  }
+}
