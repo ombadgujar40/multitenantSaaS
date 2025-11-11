@@ -33,11 +33,11 @@ export const getProjects = async (req, res) => {
   try {
     switch (role) {
       case "admin":
-        const adminResp = await prisma.project.findMany({ where: { orgId: organisation }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
+        const adminResp = await prisma.project.findMany({ where: { orgId: organisation }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, deliverableLink: true } })
         res.status(200).send(adminResp)
         break;
       case "customer":
-        const custResp = await prisma.project.findMany({ where: { orgId: organisation, customerId: id }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true } })
+        const custResp = await prisma.project.findMany({ where: { orgId: organisation, customerId: id }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, deliverableLink: true } })
         res.status(200).send(custResp)
         break;
       default:
@@ -73,10 +73,10 @@ export const getProjectsStats = async (req, res) => {
 export const updateProject = async (req, res) => {
   const { projectId } = req.params;
   const { id, organisation } = req.user
-  const { name, description, status } = req.body;
+  const { name, description, status, link } = req.body;
   const updated = await prisma.project.update({
     where: { id: Number(projectId) },
-    data: { name, description, status },
+    data: { name, description, status, deliverableLink: link },
   });
   res.json(updated);
 }

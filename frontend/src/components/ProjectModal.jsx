@@ -2,6 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { Users } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export default function ProjectModalAlt({
   open,
@@ -23,6 +32,8 @@ export default function ProjectModalAlt({
   });
   const [loading, setLoading] = useState(false);
   const [teamMembers, setTeamMembers] = useState(0)
+  const [isDeliverableOpen, setIsDeliverableOpen] = useState(false)
+  const [deliverableLink, setDeliverableLink] = useState()
 
   // --- Load employees from parent prop (dt) ---
   useEffect(() => {
@@ -51,6 +62,31 @@ export default function ProjectModalAlt({
     fetchTasks();
   }, [project, token]);
 
+  const handleSubmitDeliverable = async () => {
+    const tok = token || localStorage.getItem('token')
+    try {
+      const res = await axios.put(
+        `http://127.0.0.1:2000/project/update/${project.id}`,
+        { link: deliverableLink },
+        { headers: { Authorization: `Bearer ${tok}` } }
+      );
+      try {
+        const res = await axios.get("http://127.0.0.1:2000/project/getAllProjects", {
+          headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin" }
+        });
+        setProjects(res.data || []);
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to fetch projects");
+      }
+      toast.success("Project updated successfully!");
+
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Action failed! Check console for details.");
+    }
+  }
 
   // --- Handle input changes ---
   const handleChange = (e) => {
@@ -106,22 +142,67 @@ export default function ProjectModalAlt({
     const completed = tasks.filter(t => t.status === "completed").length;
     return Math.round((completed / tasks.length) * 100);
   }, [tasks]);
-
   return (
     <div className="w-[90vw] h-[90vh] bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col p-6">
       {/* Header */}
-      <div className="border-b pb-3">
-        <h2 className="text-2xl font-bold text-primary">{project.org.name}</h2>
-        <h2 className="text-xl font-bold text-purple-600">{project.name}</h2>
+      <div className="border-b pb-3 space-y-2">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold text-primary">{project.org.name}</h2>
+            <h2 className="text-xl font-bold text-purple-600">{project.name}</h2>
 
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          <span>{teamMembers} members</span>
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span>{teamMembers} members</span>
+            </div>
+            <p className="text-muted-foreground">
+              {project.description || "Manage and assign tasks for this project."}
+            </p>
+          </div>
+
+          {/* Deliverable Button */}
+          {!project.deliverableLink ? (<Button onClick={() => setIsDeliverableOpen(true)}>
+            Enter Deliverable Link
+          </Button>): (<a href={`/${project.deliverableLink}`} target="_blank">{project.deliverableLink}</a>)}
+
         </div>
-        <p className="text-muted-foreground">
-          {project.description || "Manage and assign tasks for this project."}
-        </p>
       </div>
+
+      {/* Deliverable Dialog */}
+      <Dialog open={isDeliverableOpen} onOpenChange={setIsDeliverableOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Submit Deliverable</DialogTitle>
+            <DialogDescription>
+              Paste your GitHub repository or hosted link below.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <label className="text-sm font-medium">GitHub / Project Link</label>
+            <input
+              type="url"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="https://github.com/username/repo"
+              value={deliverableLink}
+              onChange={(e) => setDeliverableLink(e.target.value)}
+            />
+          </div>
+
+          <DialogFooter className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setIsDeliverableOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitDeliverable}
+              disabled={!deliverableLink}
+            >
+              Submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Body */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 overflow-hidden">
@@ -209,10 +290,10 @@ export default function ProjectModalAlt({
             <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${progress < 40
-                    ? "bg-red-500"
-                    : progress < 80
-                      ? "bg-yellow-500"
-                      : "bg-green-500"
+                  ? "bg-red-500"
+                  : progress < 80
+                    ? "bg-yellow-500"
+                    : "bg-green-500"
                   }`}
                 style={{ width: `${progress}%` }}
               ></div>

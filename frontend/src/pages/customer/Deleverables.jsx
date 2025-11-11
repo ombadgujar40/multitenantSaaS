@@ -168,9 +168,9 @@ export default function Deleverables() {
                                 <Button
                                     variant="outline"
                                     size="icon"
-                                    className="h-8 w-8"
+                                    className=" h-auto w-auto p-2"
                                     onClick={() => handleDownload(project.id)} // <-- your download function
-                                >
+                                >   <a href={`https://github/${project.deliverableLink}`} target="_blank">{project.deliverableLink}</a>
                                     <Download className="h-4 w-4" />
                                 </Button>
                             </div>

@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -29,8 +26,8 @@ model Employee {
   name        String
   email       String       @unique
   password    String
-  role        String       @default("employee") // could be 'admin' or 'employee'
-  jobPosition String? // e.g. "Frontend Developer", "Manager"
+  role        String       @default("employee") // 'admin' or 'employee'
+  jobPosition String?
   tasks       Task[]
   createdAt   DateTime     @default(now())
 }
@@ -47,17 +44,18 @@ model Customer {
 }
 
 model Project {
-  id          Int          @id @default(autoincrement())
-  org         Organization @relation(fields: [orgId], references: [id])
-  orgId       Int
-  customer    Customer?    @relation(fields: [customerId], references: [id])
-  customerId  Int?
-  name        String
-  description String?
-  status      String       @default("pending") // pending, active, completed
-  tasks       Task[]
-  chats       Chat[]
-  createdAt   DateTime     @default(now())
+  id           Int           @id @default(autoincrement())
+  org          Organization  @relation(fields: [orgId], references: [id])
+  orgId        Int
+  customer     Customer?     @relation(fields: [customerId], references: [id])
+  customerId   Int?
+  name         String
+  description  String?
+  status       String        @default("pending") // pending, active, completed
+  tasks        Task[]
+  chats        Chat[]
+  deliverableLink String?
+  createdAt    DateTime      @default(now())
 }
 
 model Task {
@@ -82,3 +80,5 @@ model Chat {
   message    String
   createdAt  DateTime @default(now())
 }
+
+
