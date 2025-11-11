@@ -35,7 +35,7 @@ export default function Projects() {
   const [isOpen, setIsOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const navigate  = useNavigate()
+  const navigate = useNavigate()
 
   // -------- Fetch Projects ----------
   const fetchProjects = async (tok) => {
@@ -60,7 +60,7 @@ export default function Projects() {
   }, [token, org]);
 
   const handleAdd = () => {
-    setSelectedProject({ name: "", description: "", status: "pending" });
+    setSelectedProject({ name: "", description: "", status: "pending", dueDate: "" });
     setIsEditMode(false);
     setIsOpen(true);
   };
@@ -85,6 +85,7 @@ export default function Projects() {
           selectedProject,
           { headers: { Authorization: `Bearer ${tok}` } }
         );
+        fetchProjects(tok)
         toast.success("Project updated successfully!");
       } else {
         const res = await axios.post(
@@ -154,7 +155,7 @@ export default function Projects() {
                 <div className="flex items-center gap-2">
                   <Badge>{project.status}</Badge>
                   <Link to={`${project.id}`} className="flex items-center">
-                  <Badge className={"cursor-pointer"}>View</Badge>
+                    <Badge className={"cursor-pointer"}>View</Badge>
                   </Link>
                 </div>
               </div>
@@ -223,6 +224,15 @@ export default function Projects() {
                 <Input
                   name="description"
                   value={selectedProject.description}
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <Label>Due Date</Label>
+                <Input
+                  type="date"
+                  name="dueDate"
+                  value={selectedProject.dueDate}
                   onChange={handleChange}
                 />
               </div>

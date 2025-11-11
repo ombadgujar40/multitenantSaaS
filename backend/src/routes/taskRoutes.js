@@ -33,7 +33,7 @@ export const getTasks = async (req, res) => {
 
   try {
     if (role == "admin") {
-      const resp = await prisma.task.findMany({ where: { assignedToId: id}, select: { id: true, title: true, description: true, status: true, createdAt: true } })
+      const resp = await prisma.task.findMany({ where: {project: {orgId: Number(organisation)}}, select: { id: true, title: true, description: true, status: true, createdAt: true, assignedToId: true, assignedTo: true, dueDate: true } })
       res.status(200).send(resp)
     } else
       if (role == "employee") {

@@ -194,7 +194,11 @@ export default function ProjectDetail({ projectId, token }) {
                   <span>
                     Due:{" "}
                     {task.dueDate
-                      ? new Date(task.dueDate).toLocaleDateString()
+                      ? new Date(task.dueDate).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })
                       : "—"}
                   </span>
                 </div>

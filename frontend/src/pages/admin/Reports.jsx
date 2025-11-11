@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { empAuth } from "../../contexts/EmpContext";
 
 export default function ReportsTab({ token }) {
-  const { data, org } = empAuth();
+  const { data } = empAuth();
   const [summaryMetrics, setSummaryMetrics] = useState([]);
   const [projectPerformance, setProjectPerformance] = useState([]);
   const [employeeWorkload, setEmployeeWorkload] = useState([]);
@@ -24,35 +24,41 @@ export default function ReportsTab({ token }) {
 
         // ----- Fetch Projects -----
         const projectRes = await axios.get("http://127.0.0.1:2000/project/getAllProjects", {
-          headers: { Authorization: `Bearer ${tk}` }, params: {role: 'admin'}
+          headers: { Authorization: `Bearer ${tk}` }, params: { role: 'admin' }
         });
         const projects = projectRes.data || [];
+        // console.log(projectRes.data)
 
         // ----- Fetch Tasks -----
         const taskRes = await axios.get("http://127.0.0.1:2000/task/getAllTasks", {
-          headers: { Authorization: `Bearer ${tk}` }, params: {role: "admin"}
+          headers: { Authorization: `Bearer ${tk}` }, params: { role: "admin" }
         });
         const tasks = taskRes.data || [];
-        console.log(tasks)
+        // console.log(taskRes.data)
 
         // ----- Fetch Employees -----
-        // const employeeRes = await axios.get("http://127.0.0.1:2000/user/getAllEmps", {
-        //   headers: { Authorization: `Bearer ${tk}` }, params: {role: "admin"}
-        // });
         const employees = data || [];
 
         // ---- 1️⃣ Summary Metrics ----
         const totalProjects = projects.length;
-        const activeEmployees = new Set(tasks?.map((t) => t.assignedTo?._id)).size;
+        const activeEmployees = new Set(tasks?.map((t) => t.assignedTo?.id)).size;
         const completionRate =
           projects.length > 0
             ? Math.round(
-                projects.reduce((acc, p) => acc + (p.progress || 0), 0) / projects.length
-              )
+              projects.reduce((acc, project) => {
+                const totalTasks = project.tasks?.length || 0;
+                const completedTasks =
+                  project.tasks?.filter((t) => t.status === "completed").length || 0;
+                const projectProgress =
+                  totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+                return acc + projectProgress;
+              }, 0) / projects.length
+            )
             : 0;
-        const tasksInProgress = tasks.filter((t) => t.status === "active").length;
+
+        const tasksInProgress = tasks.filter((t) => t.status == "in_progress").length;
         const overdueTasks = tasks.filter(
-          (t) => t.status !== "completed" && new Date(t.dueDate) < new Date()
+          (t) => t.status != "completed" && new Date(t.dueDate) < new Date()
         ).length;
 
         setSummaryMetrics([
@@ -66,7 +72,7 @@ export default function ReportsTab({ token }) {
         // ---- 2️⃣ Project Performance Table ----
         const projectPerformanceData = projects.map((p) => {
           const projectTasks = tasks.filter((t) => t.projectId === p._id);
-          const completed = projectTasks.filter((t) => t.status === "completed").length;
+          const completed = projectTasks.filter((t) => t.status == "completed").length;
           const total = projectTasks.length || 1;
           const percent = Math.round((completed / total) * 100);
           let status = "On Track";
@@ -75,19 +81,19 @@ export default function ReportsTab({ token }) {
 
           return {
             name: p.name,
-            customer: p.customerName || "N/A",
-            progress: p.progress,
+            customer: p.customer.name || "N/A",
+            progress: percent,
             done: completed,
             total,
             status,
-            deadline: new Date(p.deadline).toLocaleDateString(),
+            deadline: p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "N/A",
           };
         });
         setProjectPerformance(projectPerformanceData);
 
         // ---- 3️⃣ Employee Workload ----
         const employeeData = employees.map((emp) => {
-          const empTasks = tasks.filter((t) => t.assignedTo?._id === emp._id);
+          const empTasks = tasks.filter((t) => t.assignedTo?.id === emp.id);
           const completed = empTasks.filter((t) => t.status === "completed").length;
           const activeProjects = [
             ...new Set(empTasks.map((t) => t.projectId)),
@@ -181,8 +187,8 @@ export default function ReportsTab({ token }) {
                           p.status === "Completed"
                             ? "bg-green-100 text-green-700"
                             : p.status === "Behind"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-blue-100 text-blue-700"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-blue-100 text-blue-700"
                         }
                       >
                         {p.status}
@@ -256,11 +262,10 @@ export default function ReportsTab({ token }) {
                 {upcomingDeadlines.map((d, i) => (
                   <tr
                     key={i}
-                    className={`border-b ${
-                      new Date(d.dueDate) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+                    className={`border-b ${new Date(d.dueDate) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
                         ? "bg-red-50"
                         : ""
-                    }`}
+                      }`}
                   >
                     <td className="p-2">{d.project}</td>
                     <td className="p-2">{d.task}</td>

@@ -27,7 +27,7 @@ export const CustProvider = ({ children }) => {
                         role: data.data.role
                     }
                     const custs = await axios.get(`http://localhost:2000/customer/getAllCusts`, { params: payload })
-                    console.log(custs.data)
+                    // console.log(custs.data)
                     setData(custs.data)
                     setOrg(orgName.data.name)
                 }

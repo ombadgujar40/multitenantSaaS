@@ -4,7 +4,7 @@ import { prisma } from "../config/prismaconfig.js"
 
 export const register = async (req, res) => {
   try {
-    const { name, description } = req.body
+    const { name, description, dueDate } = req.body
     const { id, organisation } = req.user
 
     const org = await prisma.organization.findUnique({ where: { id: organisation } })
@@ -16,6 +16,7 @@ export const register = async (req, res) => {
         customerId: id,
         name,
         description,
+        dueDate: new Date(dueDate).toISOString()
       }
     })
 
@@ -33,11 +34,11 @@ export const getProjects = async (req, res) => {
   try {
     switch (role) {
       case "admin":
-        const adminResp = await prisma.project.findMany({ where: { orgId: organisation }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, deliverableLink: true } })
+        const adminResp = await prisma.project.findMany({ where: { orgId: organisation }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, deliverableLink: true, tasks: true, customer: true, dueDate: true } })
         res.status(200).send(adminResp)
         break;
       case "customer":
-        const custResp = await prisma.project.findMany({ where: { orgId: organisation, customerId: id }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, deliverableLink: true } })
+        const custResp = await prisma.project.findMany({ where: { orgId: organisation, customerId: id }, select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, deliverableLink: true, dueDate: true } })
         res.status(200).send(custResp)
         break;
       default:
@@ -73,10 +74,10 @@ export const getProjectsStats = async (req, res) => {
 export const updateProject = async (req, res) => {
   const { projectId } = req.params;
   const { id, organisation } = req.user
-  const { name, description, status, link } = req.body;
+  const { name, description, status, link, dueDate } = req.body;
   const updated = await prisma.project.update({
     where: { id: Number(projectId) },
-    data: { name, description, status, deliverableLink: link },
+    data: { name, description, status, deliverableLink: link, dueDate: new Date(dueDate).toISOString() },
   });
   res.json(updated);
 }

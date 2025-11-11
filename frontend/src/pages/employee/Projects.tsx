@@ -159,7 +159,11 @@ export default function Projects() {
                   <Calendar className="h-4 w-4" />
                   <span>
                     {task.dueDate
-                      ? new Date(task.dueDate).toLocaleDateString()
+                      ? new Date(task.dueDate).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric"
+                      })
                       : "No due date"}
                   </span>
                 </div>
@@ -216,7 +220,11 @@ export default function Projects() {
                 <div>
                   <strong>Due Date:</strong>{" "}
                   {selectedTask.dueDate
-                    ? new Date(selectedTask.dueDate).toLocaleDateString()
+                    ? new Date(selectedTask.dueDate).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })
                     : "Not specified"}
                 </div>
               </div>

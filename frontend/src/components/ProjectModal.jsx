@@ -263,7 +263,7 @@ export default function ProjectModalAlt({
                 <option value="">Select Employee</option>
                 {employees.map((emp) => (
                   <option key={emp.id} value={emp.id}>
-                    {emp.name} ({emp.email})
+                    {emp.name} ({emp.jobPosition})
                   </option>
                 ))}
               </select>

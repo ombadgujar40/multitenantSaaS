@@ -39,6 +39,7 @@ export default function Projects() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isReject, setIsReject] = useState()
+  const [teamMembers, setTeamMembers] = useState(0)
   const role = 'admin'
 
   // -------- Fetch Projects ----------
@@ -50,6 +51,10 @@ export default function Projects() {
           headers: { Authorization: `Bearer ${tok}` }, params: { role: role }
         });
         setProjects(res.data || []);
+        const uniqueIds = res.data.map(e => e.tasks.map(task => task.assignTo?.id).length);
+        // console.log(Number(uniqueIds));
+        setTeamMembers(Number(uniqueIds))
+
       } catch (error) {
         console.error(error);
         toast.error("Failed to fetch projects");
@@ -127,6 +132,22 @@ export default function Projects() {
       toast.error("Failed to delete project");
     }
   };
+
+  const completionRate =
+    projects.length > 0
+      ? Math.round(
+        projects.reduce((acc, project) => {
+          const totalTasks = project.tasks?.length || 0;
+          const completedTasks =
+            project.tasks?.filter((t) => t.status === "completed").length || 0;
+          const projectProgress =
+            totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+          return acc + projectProgress;
+        }, 0) / projects.length
+      )
+      : 0;
+
+      // console.log(completionRate)
 
   // -------- UI ----------
   const statusColors = {
@@ -206,18 +227,18 @@ export default function Projects() {
             </CardHeader>
 
             <CardContent className="space-y-4 text-sm text-muted-foreground">
-              {/* <div className="space-y-2">
+              <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Progress</span>
-                  <span className="font-medium">{project.progress}%</span>
+                  <span className="font-medium">{completionRate}%</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full gradient-primary transition-all duration-300"
-                    style={{ width: `${project.progress}%` }}
+                    style={{ width: `${completionRate}%` }}
                   />
                 </div>
-              </div> */}
+              </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -228,6 +249,10 @@ export default function Projects() {
                       : "No due date"}
                   </span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  <span>{teamMembers || 0} members</span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -237,16 +262,16 @@ export default function Projects() {
 
       </div>
       {isModalOpen && (
-          <ProjectModal
-            open={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            project={activeProject}
-            token={localStorage.getItem('token')}
-            org={org}
-            isAdmin={true}
-            dt={data}
-            role={role}
-          />
+        <ProjectModal
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          project={activeProject}
+          token={localStorage.getItem('token')}
+          org={org}
+          isAdmin={true}
+          dt={data}
+          role={role}
+        />
       )}
     </div>
   );

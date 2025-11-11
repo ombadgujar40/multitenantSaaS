@@ -27,7 +27,7 @@ export const EmpProvider = ({ children }) => {
                         role: data.data.role
                     }
                     const emps = await axios.get(`http://localhost:2000/employee/getAllEmps`, { params: payload })
-                    console.log(emps.data)
+                    // console.log(emps.data)
                     setData(emps.data)
                     setOrg(orgName.data.name)
                 }
