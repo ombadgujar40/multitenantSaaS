@@ -28,7 +28,7 @@ export default function ReportsTab({ token }) {
         });
         const projects = projectRes.data || [];
         // console.log(projectRes.data)
-
+        
         // ----- Fetch Tasks -----
         const taskRes = await axios.get("http://127.0.0.1:2000/task/getAllTasks", {
           headers: { Authorization: `Bearer ${tk}` }, params: { role: "admin" }
@@ -120,7 +120,7 @@ export default function ReportsTab({ token }) {
           )
           .slice(0, 6)
           .map((t) => ({
-            project: projects.find((p) => p._id === t.projectId)?.name || "N/A",
+            project: t.project?.name || "N/A",
             task: t.title,
             assignedTo: t.assignedTo?.name || "Unassigned",
             dueDate: new Date(t.dueDate).toLocaleDateString(),
@@ -132,6 +132,8 @@ export default function ReportsTab({ token }) {
         toast.error("Error fetching report data");
       }
     };
+
+    
 
     fetchData();
   }, [token, data]);

@@ -90,31 +90,44 @@ export default function Projects() {
 
   // -------- Save (Add / Update) ----------
   const handleStatusChange = async (projectId, status) => {
-    const tok = token || localStorage.getItem('token')
+    const tok = token || localStorage.getItem("token");
     try {
-      const res = await axios.put(
-        `http://127.0.0.1:2000/project/update/${projectId}`,
-        { status: status },
-        { headers: { Authorization: `Bearer ${tok}` } }
-      );
-      try {
-        const res = await axios.get("http://127.0.0.1:2000/project/getAllProjects", {
-          headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin" }
-        });
-        setProjects(res.data || []);
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to fetch projects");
+      if (status === "active") {
+        // call an endpoint that will activate the project AND create the ChatGroup + members
+        const res = await axios.put(
+          `http://127.0.0.1:2000/project/activate/${projectId}`,
+          { status },
+          { headers: { Authorization: `Bearer ${tok}` } }
+        );
+
+        // res.data should contain updated project and optionally created group
+        toast.success("Project accepted and group created!");
+      } else {
+        // fallback to existing update endpoint for other statuses (like rejected)
+        await axios.put(
+          `http://127.0.0.1:2000/project/update/${projectId}`,
+          { status },
+          { headers: { Authorization: `Bearer ${tok}` } }
+        );
+        toast.success("Project status updated!");
       }
-      toast.success("Project updated successfully!");
 
-
+      // refresh projects list after change
+      try {
+        const resp = await axios.get("http://127.0.0.1:2000/project/getAllProjects", {
+          headers: { Authorization: `Bearer ${tok}` },
+          params: { role: "admin" },
+        });
+        setProjects(resp.data || []);
+      } catch (error) {
+        console.error("Failed to refresh projects", error);
+        toast.error("Failed to refresh projects");
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Status change failed", error);
       toast.error("Action failed! Check console for details.");
     }
   };
-
   // -------- Delete ----------
   const handleDelete = async (id) => {
     const confirmation = confirm("Do you want to delete this project?");
@@ -133,28 +146,22 @@ export default function Projects() {
     }
   };
 
-  const completionRate =
-    projects.length > 0
-      ? Math.round(
-        projects.reduce((acc, project) => {
-          const totalTasks = project.tasks?.length || 0;
-          const completedTasks =
-            project.tasks?.filter((t) => t.status === "completed").length || 0;
-          const projectProgress =
-            totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-          return acc + projectProgress;
-        }, 0) / projects.length
-      )
-      : 0;
-
-      // console.log(completionRate)
-
+  // const completedTasks = projects.tasks.filter((t) => t.status === "completed").length;
+  const completionRate = (project) => {
+    const totalTasks = project.tasks?.length || 0;
+    const completedTasks =
+      project.tasks?.filter((t) => t.status === "completed").length || 0;
+    const projectProgress =
+      totalTasks > 0 ? (project.tasks?.filter((t) => t.status === "completed").length / totalTasks) * 100 : 0;
+      return projectProgress > 0 ? Math.round(projectProgress) : 0;
+  }
   // -------- UI ----------
   const statusColors = {
     active: "bg-primary text-primary-foreground",
     completed: "bg-green-500 text-white",
     "on-hold": "bg-yellow-500 text-black",
   };
+
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -224,18 +231,19 @@ export default function Projects() {
               </div>
 
               <CardTitle className="mt-4">{project.name}</CardTitle>
+              <span>{project.customer.name}</span>
             </CardHeader>
 
             <CardContent className="space-y-4 text-sm text-muted-foreground">
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Progress</span>
-                  <span className="font-medium">{completionRate}%</span>
+                  <span className="font-medium">{completionRate(project)}%</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full gradient-primary transition-all duration-300"
-                    style={{ width: `${completionRate}%` }}
+                    style={{ width: `${completionRate(project)}%` }}
                   />
                 </div>
               </div>
@@ -248,10 +256,6 @@ export default function Projects() {
                       ? new Date(project.dueDate).toLocaleDateString()
                       : "No due date"}
                   </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span>{teamMembers || 0} members</span>
                 </div>
               </div>
             </CardContent>

@@ -98,3 +98,87 @@ export const getProjectDetail = async (req, res) => {
     console.log(error)
   }
 }
+
+export const handleAcceptProject = async (req, res) => {
+  const projectId = Number(req.params.id);
+  const prisma = req.app.get("prisma");
+  const emitGroupCreated = req.app.get("emitGroupCreated");
+
+  try {
+    // transaction to update project, create group, add members, add system message
+    const result = await prisma.$transaction(async (tx) => {
+      // Load project with customer and org info
+      const project = await tx.project.findUnique({
+        where: { id: projectId },
+        include: { customer: true, org: true },
+      });
+
+      if (!project) {
+        throw new Error("Project not found");
+      }
+
+      // update project status -> active
+      const updatedProject = await tx.project.update({
+        where: { id: projectId },
+        data: { status: "active" },
+      });
+
+      // create chat group (one group per project)
+      const group = await tx.chatGroup.create({
+        data: {
+          projectId: projectId,
+          name: project.name,
+          orgId: project.orgId,
+        },
+      });
+
+      // add customer as member (if exists)
+      if (project.customer) {
+        await tx.groupMember.create({
+          data: {
+            groupId: group.id,
+            customerId: project.customer.id,
+            role: "member",
+          },
+        });
+      }
+
+      // add all org admins as members
+      const admins = await tx.employee.findMany({
+        where: { orgId: project.orgId, role: "admin" },
+      });
+
+      for (const admin of admins) {
+        await tx.groupMember.create({
+          data: {
+            groupId: group.id,
+            employeeId: admin.id,
+            role: "admin",
+          },
+        });
+      }
+
+      // optional: create system message
+      const sysMsg = await tx.message.create({
+        data: {
+          groupId: group.id,
+          senderId: 0,
+          senderType: "system",
+          text: `Group "${group.name}" created for project.`,
+        },
+      });
+
+      return { updatedProject, group, sysMsg };
+    });
+
+    // emit websocket event to notify clients (if helper available)
+    if (emitGroupCreated) {
+      emitGroupCreated(result.group);
+    }
+
+    return res.json({ ok: true, project: result.updatedProject, group: result.group });
+  } catch (error) {
+    console.error("activate project error:", error);
+    return res.status(500).json({ ok: false, message: error.message || "Server error" });
+  }
+}

@@ -95,38 +95,77 @@ export default function ProjectModalAlt({
   };
 
   // --- Add new task ---
+  // replace existing handleAddTask with this
   const handleAddTask = async () => {
     if (!taskForm.title || !taskForm.assignedTo)
       return toast.error("Task title and assigned employee are required");
 
     setLoading(true);
+    const tok = token || localStorage.getItem("token");
+
     try {
+      // 1) create the task
       await axios.post(
         `http://127.0.0.1:2000/task/register`,
         {
           projectId: project.id,
           title: taskForm.title,
           description: taskForm.description,
-          dueDate: taskForm.dueDate
-            ? new Date(taskForm.dueDate).toISOString()
-            : null,
+          dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : null,
           assignedToId: parseInt(taskForm.assignedTo),
           status: "pending",
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${tok}` } }
       );
 
       toast.success("Task created successfully!");
 
-      // reset form
+      // 2) find chat group associated with this project
+      try {
+        const groupsRes = await axios.get(`http://127.0.0.1:2000/chat/groups`, {
+          headers: { Authorization: `Bearer ${tok}` },
+        });
+        const groupsData = Array.isArray(groupsRes.data) ? groupsRes.data : groupsRes.data.groups || [];
+
+        // find group with matching projectId
+        const targetGroup = groupsData.find((g) => Number(g.projectId) === Number(project.id));
+
+        if (targetGroup) {
+          // 3) add the assigned employee as a group member
+          await axios.post(
+            `http://127.0.0.1:2000/chat/groups/${targetGroup.id}/members`,
+            { employeeId: Number(taskForm.assignedTo), role: "member" },
+            { headers: { Authorization: `Bearer ${tok}` } }
+          );
+          toast.success("Assigned employee added to chat group.");
+        } else {
+          // Optionally create the group automatically (if desired). For now just warn.
+          console.warn("No chat group found for project", project.id);
+          // Optionally create group:
+          // await axios.post(`http://127.0.0.1:2000/chat/groups`, {
+          //   projectId: project.id, name: project.name, orgId: project.orgId, members: [{ employeeId: Number(taskForm.assignedTo) }]
+          // }, { headers: { Authorization: `Bearer ${tok}` } });
+        }
+      } catch (err) {
+        console.error("Failed to add employee to group", err);
+        toast.error("Task created but failed to add employee to chat group.");
+      }
+
+      // 4) reset form and refresh tasks
       setTaskForm({ title: "", description: "", dueDate: "", assignedTo: "" });
 
-      // refresh tasks
-      const res = await axios.get(
-        `http://127.0.0.1:2000/task/getProjectTasks/${project.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setTasks(res.data || []);
+      try {
+        const res = await axios.get(
+          `http://127.0.0.1:2000/task/getProjectTasks/${project.id}`,
+          { headers: { Authorization: `Bearer ${tok}` } }
+        );
+        setTasks(res.data || []);
+        // recalc members count
+        const uniqueIds = [...new Set((res.data || []).map(task => task.assignedTo?.id).filter(Boolean))];
+        setTeamMembers(uniqueIds.length);
+      } catch (err) {
+        console.error("Failed to refresh tasks", err);
+      }
     } catch (err) {
       console.error(err);
       toast.error("Failed to create task");
@@ -149,7 +188,10 @@ export default function ProjectModalAlt({
         <div className="flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-bold text-primary">{project.org.name}</h2>
-            <h2 className="text-xl font-bold text-purple-600">{project.name}</h2>
+            <div className="flex items-end justify-start gap-4">
+              <h2 className="text-xl font-bold text-accent">{project.name}</h2>
+              <h2 className="text-md text-muted">{project.customer.name}</h2>
+            </div>
 
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -163,7 +205,7 @@ export default function ProjectModalAlt({
           {/* Deliverable Button */}
           {!project.deliverableLink ? (<Button onClick={() => setIsDeliverableOpen(true)}>
             Enter Deliverable Link
-          </Button>): (<a href={`/${project.deliverableLink}`} target="_blank">{project.deliverableLink}</a>)}
+          </Button>) : (<a href={`/${project.deliverableLink}`} target="_blank">{project.deliverableLink}</a>)}
 
         </div>
       </div>

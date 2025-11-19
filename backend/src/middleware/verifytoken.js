@@ -11,8 +11,7 @@ export const verifyToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // will contain id, role, orgId if signed properly
-    // console.log("Decoded user:", req.user);
+    req.user = decoded; 
     next();
   } catch (error) {
     console.error("JWT Verification Error:", error.message);

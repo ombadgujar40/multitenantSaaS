@@ -17,6 +17,8 @@ model Organization {
   customers Customer[]
   projects  Project[]
   createdAt DateTime   @default(now())
+
+  chatGroups ChatGroup[]
 }
 
 model Employee {
@@ -29,6 +31,7 @@ model Employee {
   role        String       @default("employee") // 'admin' or 'employee'
   jobPosition String?
   tasks       Task[]
+    groupMembers GroupMember[]   // <-- ADD THIS
   createdAt   DateTime     @default(now())
 }
 
@@ -40,6 +43,7 @@ model Customer {
   email     String       @unique
   password  String
   projects  Project[]
+  groupMembers GroupMember[]   // <-- ADD THIS
   createdAt DateTime     @default(now())
 }
 
@@ -57,6 +61,8 @@ model Project {
   deliverableLink String?
   createdAt    DateTime      @default(now())
   dueDate      DateTime?
+
+  chatGroups ChatGroup[]
 }
 
 model Task {
@@ -81,5 +87,50 @@ model Chat {
   message    String
   createdAt  DateTime @default(now())
 }
+
+model ChatGroup {
+  id            Int           @id @default(autoincrement())
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     Int           @unique
+  name          String
+  org           Organization  @relation(fields: [orgId], references: [id])
+  orgId         Int
+  members       GroupMember[]
+  messages      Message[]
+  createdAt     DateTime      @default(now())
+  lastMessageAt DateTime?
+}
+
+model GroupMember {
+  id          Int       @id @default(autoincrement())
+  group       ChatGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId     Int
+  // exactly one of employeeId or customerId will be set
+  employee    Employee? @relation(fields: [employeeId], references: [id])
+  employeeId  Int?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  customerId  Int?
+  role        String    @default("member") // e.g., admin, member
+  joinedAt    DateTime  @default(now())
+
+  @@index([groupId])
+  @@index([employeeId])
+  @@index([customerId])
+}
+
+model Message {
+  id         Int       @id @default(autoincrement())
+  group      ChatGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId    Int
+  senderId   Int
+  senderType String    // 'employee' | 'customer' | 'system'
+  text       String
+  meta       Json?     // optional metadata (attachments, edits)
+  createdAt  DateTime  @default(now())
+
+  @@index([groupId])
+  @@index([createdAt])
+}
+
 
 
