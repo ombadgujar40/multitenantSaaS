@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
     const getUserData = async () => {
       setToken(tk)
       try {
-        const data = await api.get(`http://127.0.0.1:2000/me`, {
+        const data = await api.get(`/me`, {
           headers: {
             Authorization: `Bearer ${tk}`
           }
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
       email, password, role
     }
     try {
-      const data = await api.post(`http://127.0.0.1:2000/login`, cred) 
+      const data = await api.post(`/login`, cred) 
       if (!data) {
         console.log("error in login context function")
       }
