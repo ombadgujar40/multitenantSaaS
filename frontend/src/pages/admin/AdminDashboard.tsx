@@ -21,10 +21,17 @@ const statsData = [
 
 export default function AdminDashboard() {
   const { data } = empAuth()
+  const {token} = useAuth()
   const [empNum, setEmpNum] = useState()
   const [pendProjLen, setPendProjLen] = useState()
   const [actProjLen, setActProjLen] = useState()
   const [compProjLen, setCompProjLen] = useState()
+  const navigate = useNavigate()
+
+
+  useEffect(() => {
+    if(!token) navigate('/')
+  }, [token])
 
   useEffect(() => {
     const tok = localStorage.getItem('token')
