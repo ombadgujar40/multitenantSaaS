@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { Users, FolderKanban, Clock, CheckCircle, AlertTriangle } from "lucide-react";
-import axios from "axios";
+import api from "@/api/axios"
 import { toast } from "sonner";
 import { empAuth } from "../../contexts/EmpContext";
 
@@ -23,14 +23,14 @@ export default function ReportsTab({ token }) {
         const tk = token || localStorage.getItem("token");
 
         // ----- Fetch Projects -----
-        const projectRes = await axios.get("http://127.0.0.1:2000/project/getAllProjects", {
+        const projectRes = await api.get("http://127.0.0.1:2000/project/getAllProjects", {
           headers: { Authorization: `Bearer ${tk}` }, params: { role: 'admin' }
         });
         const projects = projectRes.data || [];
         // console.log(projectRes.data)
         
         // ----- Fetch Tasks -----
-        const taskRes = await axios.get("http://127.0.0.1:2000/task/getAllTasks", {
+        const taskRes = await api.get("http://127.0.0.1:2000/task/getAllTasks", {
           headers: { Authorization: `Bearer ${tk}` }, params: { role: "admin" }
         });
         const tasks = taskRes.data || [];

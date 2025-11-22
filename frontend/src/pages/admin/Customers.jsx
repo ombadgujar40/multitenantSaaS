@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserCircle2, Mail, Building2, Pencil, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import axios from "axios";
+import api from "@/api/axios"
 import { empAuth } from "../../contexts/EmpContext";
 import { custAuth } from "../../contexts/CustContext";
 
@@ -59,7 +59,7 @@ export default function Customers() {
   const handleSave = async () => {
     try {
       if (isEditMode) {
-        const res = await axios.put(
+        const res = await api.put(
           `http://127.0.0.1:2000/customer/update/${selectedCustomer.id}`,
           selectedCustomer,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -74,7 +74,7 @@ export default function Customers() {
       } else {
         const payload = { ...selectedCustomer, orgName: org, password: `${selectedCustomer.name}` };
 
-        const res = await axios.post(`http://127.0.0.1:2000/customer/register`, payload, {
+        const res = await api.post(`http://127.0.0.1:2000/customer/register`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -94,7 +94,7 @@ export default function Customers() {
     const confirmation = alert("Do you want to delete the user")
     if (confirmation) {
       try {
-        await axios.delete(`http://127.0.0.1:2000/customer/delete/${id}`, {
+        await api.delete(`http://127.0.0.1:2000/customer/delete/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Users, Calendar, FolderKanban } from "lucide-react";
-import axios from "axios";
+import api from "@/api/axios.js";
 import { toast } from "sonner";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -22,12 +22,12 @@ export default function ProjectDetail({ projectId, token }) {
     const fetchProjectDetails = async () => {
       const token = localStorage.getItem('token')
       try {
-        const res = await axios.get(`http://127.0.0.1:2000/project/getProjectDetail/${projId}`, {
+        const res = await api.get(`http://127.0.0.1:2000/project/getProjectDetail/${projId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setProject(res.data);
 
-        const taskRes = await axios.get(
+        const taskRes = await api.get(
           `http://127.0.0.1:2000/task/getProjectTasks/${projId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );

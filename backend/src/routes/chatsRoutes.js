@@ -214,10 +214,11 @@ export const createGroup = async (req, res) => {
   const prisma = req.app.get("prisma");
   const emitGroupCreated = req.app.get("emitGroupCreated");
   const user = req.user;
+  console.log(user.role)
 
   // only allow admin users for now
   if (!user) return res.status(401).json({ message: "Unauthorized" });
-  if (user.role !== "admin") return res.status(403).json({ message: "Forbidden" });
+  if (user.role != "admin") return res.status(403).json({ message: "Forbidden" });
 
   const { projectId, name, orgId, members = [] } = req.body;
   if (!projectId || !name || !orgId) return res.status(400).json({ message: "Missing fields" });
@@ -320,3 +321,41 @@ export const addMemberToGroup = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getGroupMembers = async (req, res) => {
+  const prisma = req.app.get("prisma");
+  const user = req.user;
+  const groupId = Number(req.params.groupId);
+
+  if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    // Fetch all group members with joined info
+    const members = await prisma.groupMember.findMany({
+      where: { groupId },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { id: "asc" },
+    });
+
+    return res.status(200).json(members);
+  } catch (err) {
+    console.error("getGroupMembers error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+

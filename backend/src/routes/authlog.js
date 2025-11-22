@@ -37,7 +37,7 @@ export const login = async (req, res) => {
 
             res.status(200).json({ message: "Login successful", token });
 
-        } else {
+        } else if(role == 'admin') {
             const user = await prisma.employee.findUnique({ where: { email } })
             if (!user) return res.status(400).json({ message: "User not found" });
 
@@ -51,6 +51,8 @@ export const login = async (req, res) => {
             )
 
             res.status(200).json({ message: "Login successful", token });
+        } else {
+            res.status(400).json({ message: "Invalid credentials" });
         }
 
     } catch (error) {

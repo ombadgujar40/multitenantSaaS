@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "./AuthContext";
+import api from "../api/axios";
 
 const EmpContext = createContext()
 
@@ -12,21 +13,21 @@ export const EmpProvider = ({ children }) => {
         if (!token) return
         const getEmps = async () => {
             try {
-                const data = await axios.get(`http://127.0.0.1:2000/me`, {
+                const data = await api.get(`http://127.0.0.1:2000/me`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
                 })
                 const org = data.data.data.orgId
                 if(!org) return
-                const orgName = await axios.get(`http://127.0.0.1:2000/organization/one/${org}`)
+                const orgName = await api.get(`http://127.0.0.1:2000/organization/one/${org}`)
 
                 if (data.data.role == 'admin') {
                     const payload = {
                         orgId: org,
                         role: data.data.role
                     }
-                    const emps = await axios.get(`http://localhost:2000/employee/getAllEmps`, { params: payload })
+                    const emps = await api.get(`http://localhost:2000/employee/getAllEmps`, { params: payload })
                     // console.log(emps.data)
                     setData(emps.data)
                     setOrg(orgName.data.name)

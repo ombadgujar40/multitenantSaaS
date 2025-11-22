@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
-import {useNavigate} from 'react-router-dom'
+import api from "../api/axios";
 
 const AuthContext = createContext()
 
@@ -20,7 +19,7 @@ export const AuthProvider = ({ children }) => {
     const getUserData = async () => {
       setToken(tk)
       try {
-        const data = await axios.get(`http://127.0.0.1:2000/me`, {
+        const data = await api.get(`http://127.0.0.1:2000/me`, {
           headers: {
             Authorization: `Bearer ${tk}`
           }
@@ -42,7 +41,7 @@ export const AuthProvider = ({ children }) => {
       email, password, role
     }
     try {
-      const data = await axios.post(`http://127.0.0.1:2000/login`, cred) 
+      const data = await api.post(`http://127.0.0.1:2000/login`, cred) 
       if (!data) {
         console.log("error in login context function")
       }

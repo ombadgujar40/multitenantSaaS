@@ -7,6 +7,7 @@ import {
   postMessageToGroup,
   createGroup,
   addMemberToGroup,
+  getGroupMembers,
 } from "../routes/chatsRoutes.js";
 
 const router = express.Router();
@@ -39,5 +40,8 @@ router.post("/groups", createGroup);
 
 // Add a member to group
 router.post("/groups/:groupId/members", addMemberToGroup);
+
+// get a member to group
+router.get("/groups/:groupId/members", getGroupMembers);
 
 export default router;

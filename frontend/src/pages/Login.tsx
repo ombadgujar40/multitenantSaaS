@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Building2, Loader2 } from "lucide-react";
-import axios from "axios"
+import api from "@/api/axios"
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -25,7 +25,7 @@ export default function Login() {
         const tk = token || localStorage.getItem("token");
         if (!tk) return;
 
-        const res = await axios.get("http://127.0.0.1:2000/me", {
+        const res = await api.get("http://127.0.0.1:2000/me", {
           headers: {
             Authorization: `Bearer ${tk}`,
           },
@@ -106,7 +106,6 @@ export default function Login() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="employee">Employee</SelectItem>
                     <SelectItem value="customer">Customer</SelectItem>
                   </SelectContent>

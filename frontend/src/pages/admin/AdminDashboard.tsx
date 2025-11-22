@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFetcher, useNavigate } from "react-router-dom";
 import { empAuth } from "../../contexts/EmpContext"
-import axios from "axios";
+import api from "@/api/axios"
+
 
 const statsData = [
   { name: "Jan", projects: 12, tasks: 45 },
@@ -30,15 +31,15 @@ export default function AdminDashboard() {
 
     const fetchStats = async () => {
       if (data) setEmpNum(data.length)
-      const proComplete = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+      const proComplete = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
         headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin", status: "completed" }
       });
       setCompProjLen(proComplete.data.length)
-      const proActive = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+      const proActive = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
         headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin", status: "active" }
       });
       setActProjLen(proActive.data.length)
-      const proPending = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+      const proPending = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
         headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin", status: "pending" }
       });
       setPendProjLen(proPending.data.length)

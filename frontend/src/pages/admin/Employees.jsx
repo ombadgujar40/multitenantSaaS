@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Mail, Briefcase, Pencil, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import axios from "axios";
+import api from "@/api/axios"
 
 export default function Employees() {
   const { data, token, org } = empAuth();

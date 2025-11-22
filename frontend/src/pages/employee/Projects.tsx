@@ -17,7 +17,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import axios from "axios";
+import api from "@/api/axios.js";
 import { empAuth } from "../../contexts/EmpContext";
 import { custAuth } from "../../contexts/CustContext";
 import {
@@ -43,11 +43,11 @@ export default function Projects() {
     const fetchTasks = async () => {
       try {
         const tk = token || localStorage.getItem("token");
-        const data = await axios.get(`http://127.0.0.1:2000/me`, {
+        const data = await api.get(`http://127.0.0.1:2000/me`, {
           headers: { Authorization: `Bearer ${tk}` },
         });
 
-        const allTasks = await axios.get(
+        const allTasks = await api.get(
           "http://127.0.0.1:2000/task/getAllTasks",
           {
             headers: { Authorization: `Bearer ${tk}` },
@@ -78,7 +78,7 @@ export default function Projects() {
       setLoading(true);
       const tk = token || localStorage.getItem("token");
 
-      await axios.patch(
+      await api.patch(
         `http://127.0.0.1:2000/task/update/${taskId}`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${tk}` } }

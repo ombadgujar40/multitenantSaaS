@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Building2, Loader2 } from "lucide-react";
-import axios from "axios";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");

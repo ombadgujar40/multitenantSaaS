@@ -38,7 +38,7 @@ app.use("/customer", customerroutes)
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_ORIGIN || "*",
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });

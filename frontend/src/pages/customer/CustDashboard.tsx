@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { custAuth } from "@/contexts/CustContext";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "@/api/axios"
+
 
 
 const statsData = [
@@ -38,13 +39,13 @@ export default function CustAdminDashboard() {
 
   const fetchStats = async () => {
     const tk = token || localStorage.getItem('token')
-    const data = await axios.get(`http://127.0.0.1:2000/me`, {
+    const data = await api.get(`http://127.0.0.1:2000/me`, {
       headers: {
         Authorization: `Bearer ${tk}`
       }
     })
 
-    const res = await axios.get(
+    const res = await api.get(
       "http://127.0.0.1:2000/project/getAllProjects",
       {
         headers: { Authorization: `Bearer ${tk}` },

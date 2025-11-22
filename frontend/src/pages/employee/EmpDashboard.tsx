@@ -4,8 +4,7 @@ import { Users, FolderKanban, CheckSquare, Activity, Clock } from "lucide-react"
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import axios, { all } from "axios";
-
+import api from "@/api/axios"
 
 const statsData = [
   { name: "Jan", projects: 12, tasks: 45 },
@@ -36,12 +35,12 @@ export default function EmpAdminDashboard() {
 
   const fetchTasks = async () => {
     const tk = token || localStorage.getItem('token')
-    const data = await axios.get(`http://127.0.0.1:2000/me`, {
+    const data = await api.get(`http://127.0.0.1:2000/me`, {
       headers: {
         Authorization: `Bearer ${tk}`
       }
     })
-    const allTasks = await axios.get("http://127.0.0.1:2000/task/getAllTasks", {
+    const allTasks = await api.get("http://127.0.0.1:2000/task/getAllTasks", {
       headers: { Authorization: `Bearer ${tk}` }, params: { role: "employee", id: data.data.data.id }
     });
     const employeeId = data.data.data.id;
@@ -50,15 +49,15 @@ export default function EmpAdminDashboard() {
     setUniqueProjectIds(uniqueProjectIds)
     setTasks(allTasks.data)
 
-    const proComplete = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+    const proComplete = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
       headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "completed", id: data.data.data.id }
     });
     setCompProjLen(proComplete.data.length)
-    const proActive = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+    const proActive = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
       headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "active", id: data.data.data.id }
     });
     setActProjLen(proActive.data.length)
-    const proPending = await axios.get("http://127.0.0.1:2000/project/getProjectsStats", {
+    const proPending = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
       headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "pending", id: data.data.data.id }
     });
     setPendProjLen(proPending.data.length)

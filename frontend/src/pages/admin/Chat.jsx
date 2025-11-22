@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
-import axios from "axios";
+import api from "@/api/axios"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -125,7 +125,7 @@ export default function Chat({ token: tokenProp, socketUrl: socketUrlProp, apiUr
     const fetchGroups = async () => {
       setLoadingGroups(true);
       try {
-        const res = await axios.get(`${API_URL}/chat/groups`, {
+        const res = await api.get(`${API_URL}/chat/groups`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (cancelled) return;
@@ -175,7 +175,7 @@ export default function Chat({ token: tokenProp, socketUrl: socketUrlProp, apiUr
     const token = getToken();
     if (token) {
       setLoadingMessages(true);
-      axios
+      api
         .get(`${API_URL}/chat/groups/${activeGroup}/messages`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { limit: 200 },

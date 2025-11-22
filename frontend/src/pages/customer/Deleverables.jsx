@@ -22,7 +22,7 @@ import {
     Plus,
 } from "lucide-react";
 import { toast } from "sonner";
-import axios from "axios";
+import api from "@/api/axios.js";
 import { empAuth } from "../../contexts/EmpContext";
 import { custAuth } from "../../contexts/CustContext";
 
@@ -39,7 +39,7 @@ export default function Deleverables() {
         const tok = token || localStorage.getItem('token')
         const fetchProjects = async () => {
             try {
-                const res = await axios.get("http://127.0.0.1:2000/project/getAllProjects", {
+                const res = await api.get("http://127.0.0.1:2000/project/getAllProjects", {
                     headers: { Authorization: `Bearer ${tok}` }, params: { role: "customer" }
                 });
                 console.log()
@@ -82,7 +82,7 @@ export default function Deleverables() {
     const handleSave = async () => {
         try {
             if (isEditMode) {
-                const res = await axios.put(
+                const res = await api.put(
                     `http://127.0.0.1:2000/project/update/${selectedProject.id}`,
                     selectedProject,
                     { headers: { Authorization: `Bearer ${token}` } }
@@ -97,7 +97,7 @@ export default function Deleverables() {
             } else {
                 const payload = { ...selectedProject, orgName: org };
 
-                const res = await axios.post(
+                const res = await api.post(
                     `http://127.0.0.1:2000/project/create`,
                     payload,
                     { headers: { Authorization: `Bearer ${token}` } }
@@ -120,7 +120,7 @@ export default function Deleverables() {
         if (!confirmation) return;
 
         try {
-            await axios.delete(`http://127.0.0.1:2000/project/delete/${id}`, {
+            await api.delete(`http://127.0.0.1:2000/project/delete/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 

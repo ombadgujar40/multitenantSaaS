@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import { toast } from "sonner";
 import { Users } from "lucide-react"
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import api from "../api/axios";
 
 export default function ProjectModalAlt({
   open,
@@ -45,8 +45,8 @@ export default function ProjectModalAlt({
     const fetchTasks = async () => {
       if (!project) return;
       try {
-        const res = await axios.get(
-          `http://127.0.0.1:2000/task/getProjectTasks/${project.id}`,
+        const res = await api.get(
+          `task/getProjectTasks/${project.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const uniqueIds = [...new Set(res.data.map(task => task.assignedTo?.id))];
@@ -65,13 +65,13 @@ export default function ProjectModalAlt({
   const handleSubmitDeliverable = async () => {
     const tok = token || localStorage.getItem('token')
     try {
-      const res = await axios.put(
+      const res = await api.put(
         `http://127.0.0.1:2000/project/update/${project.id}`,
         { link: deliverableLink },
         { headers: { Authorization: `Bearer ${tok}` } }
       );
       try {
-        const res = await axios.get("http://127.0.0.1:2000/project/getAllProjects", {
+        const res = await api.get("/project/getAllProjects", {
           headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin" }
         });
         setProjects(res.data || []);
@@ -95,7 +95,6 @@ export default function ProjectModalAlt({
   };
 
   // --- Add new task ---
-  // replace existing handleAddTask with this
   const handleAddTask = async () => {
     if (!taskForm.title || !taskForm.assignedTo)
       return toast.error("Task title and assigned employee are required");
@@ -104,9 +103,9 @@ export default function ProjectModalAlt({
     const tok = token || localStorage.getItem("token");
 
     try {
-      // 1) create the task
-      await axios.post(
-        `http://127.0.0.1:2000/task/register`,
+      // 1) Create the task
+      await api.post(
+        `/task/register`,
         {
           projectId: project.id,
           title: taskForm.title,
@@ -120,52 +119,75 @@ export default function ProjectModalAlt({
 
       toast.success("Task created successfully!");
 
-      // 2) find chat group associated with this project
-      try {
-        const groupsRes = await axios.get(`http://127.0.0.1:2000/chat/groups`, {
-          headers: { Authorization: `Bearer ${tok}` },
-        });
-        const groupsData = Array.isArray(groupsRes.data) ? groupsRes.data : groupsRes.data.groups || [];
+      // 2) Find chat group for this project
+      const groupsRes = await api.get(`/chat/groups`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      });
 
-        // find group with matching projectId
-        const targetGroup = groupsData.find((g) => Number(g.projectId) === Number(project.id));
+      const groupsData = Array.isArray(groupsRes.data)
+        ? groupsRes.data
+        : groupsRes.data.groups || [];
 
-        if (targetGroup) {
-          // 3) add the assigned employee as a group member
-          await axios.post(
-            `http://127.0.0.1:2000/chat/groups/${targetGroup.id}/members`,
-            { employeeId: Number(taskForm.assignedTo), role: "member" },
+      const targetGroup = groupsData.find(
+        (g) => Number(g.projectId) === Number(project.id)
+      );
+
+      if (targetGroup) {
+        // 3) Add employee to chat group only if not already present
+        try {
+          const membersRes = await api.get(
+            `/chat/groups/${targetGroup.id}/members`,
             { headers: { Authorization: `Bearer ${tok}` } }
           );
-          toast.success("Assigned employee added to chat group.");
-        } else {
-          // Optionally create the group automatically (if desired). For now just warn.
-          console.warn("No chat group found for project", project.id);
-          // Optionally create group:
-          // await axios.post(`http://127.0.0.1:2000/chat/groups`, {
-          //   projectId: project.id, name: project.name, orgId: project.orgId, members: [{ employeeId: Number(taskForm.assignedTo) }]
-          // }, { headers: { Authorization: `Bearer ${tok}` } });
+
+          const members = membersRes.data || [];
+
+          const isAlreadyMember = members.some(
+            (m) => Number(m.employeeId) === Number(taskForm.assignedTo)
+          );
+
+          if (!isAlreadyMember) {
+            await api.post(
+              `/chat/groups/${targetGroup.id}/members`,
+              { employeeId: Number(taskForm.assignedTo), role: "member" },
+              { headers: { Authorization: `Bearer ${tok}` } }
+            );
+
+            toast.success("Employee added to chat group.");
+          } else {
+            console.log("Employee already in group → skipping add.");
+          }
+        } catch (err) {
+          console.error("Failed to sync group membership", err);
         }
-      } catch (err) {
-        console.error("Failed to add employee to group", err);
-        toast.error("Task created but failed to add employee to chat group.");
       }
 
-      // 4) reset form and refresh tasks
+      // 4) Reset form
       setTaskForm({ title: "", description: "", dueDate: "", assignedTo: "" });
 
+      // 5) Refresh tasks list
       try {
-        const res = await axios.get(
-          `http://127.0.0.1:2000/task/getProjectTasks/${project.id}`,
+        const res = await api.get(
+          `/task/getProjectTasks/${project.id}`,
           { headers: { Authorization: `Bearer ${tok}` } }
         );
+
         setTasks(res.data || []);
-        // recalc members count
-        const uniqueIds = [...new Set((res.data || []).map(task => task.assignedTo?.id).filter(Boolean))];
+
+        // Recalculate unique members
+        const uniqueIds = [
+          ...new Set(
+            (res.data || [])
+              .map((task) => task.assignedTo?.id)
+              .filter(Boolean)
+          ),
+        ];
         setTeamMembers(uniqueIds.length);
+
       } catch (err) {
         console.error("Failed to refresh tasks", err);
       }
+
     } catch (err) {
       console.error(err);
       toast.error("Failed to create task");
@@ -173,6 +195,7 @@ export default function ProjectModalAlt({
       setLoading(false);
     }
   };
+
 
   if (!project || !open) return null;
 

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Building2, Loader2 } from "lucide-react";
-import axios from "axios";
+import api from "@/api/axios"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 export default function AdminRegister() {
@@ -23,8 +23,8 @@ export default function AdminRegister() {
 
   // Fetch all organizations
   useEffect(() => {
-    axios
-      .get("http://127.0.0.1:2000/organization/all")
+    api
+      .get("/organization/all")
       .then((res) => setOrganizationList(res.data.map((org) => org.name)))
       .catch((err) => console.error("Error fetching orgs:", err));
   }, []);
@@ -36,7 +36,7 @@ export default function AdminRegister() {
 
     try {
       const payload = { orgName, name, email, password, role, designation };
-      const res = await axios.post("http://127.0.0.1:2000/employee/register", payload);
+      const res = await api.post("/employee/register", payload);
       toast.success("Admin registered successfully!");
       navigate("/admin/login");
     } catch (error) {

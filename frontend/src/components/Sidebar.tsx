@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import axios from "axios";
+import api from "@/api/axios"
 import {
   LayoutDashboard,
   Users,
@@ -30,7 +30,7 @@ export const Sidebar = () => {
         const tk = token || localStorage.getItem("token");
         if (!tk) return;
 
-        const res = await axios.get("http://127.0.0.1:2000/me", {
+        const res = await api.get("http://127.0.0.1:2000/me", {
           headers: {
             Authorization: `Bearer ${tk}`,
           },

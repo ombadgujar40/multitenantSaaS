@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Building2, Loader2 } from "lucide-react";
-import axios from "axios";
+import api from "@/api/axios"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 export default function Register() {
@@ -22,7 +22,7 @@ export default function Register() {
 
   // Fetch all organizations
   useEffect(() => {
-    axios
+    api
       .get("http://127.0.0.1:2000/organization/all")
       .then((res) => setOrganizationList(res.data.map((org: any) => org.name)))
       .catch((err) => console.error("Error fetching orgs:", err));
@@ -32,20 +32,26 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
       if (role === "organization") {
         // Register as new organization
         const orgData = { name: orgName };
-        const res = await axios.post("http://127.0.0.1:2000/organization/register", orgData);
+        const res = await api.post("/organization/register", orgData);
         toast.success("Organization registered successfully!");
-      } else {
+      } else if (role === "admin") {
         // Register employee or customer under existing organization
         const payload = { orgName, name, email, password, role, designation };
-        const res = await axios.post(`http://127.0.0.1:2000/${role}/register`, payload);
+        const res = await api.post(`/employee/register`, payload);
+        toast.success("Registration successful!");
+      } else if(role === "employee") {
+        const payload = { orgName, name, email, password, role, designation };
+        const res = await api.post(`/employee/register`, payload);
+        toast.success("Registration successful!");
+      } else {
+        const payload = { orgName, name, email, password, role, designation };
+        const res = await api.post(`/customer/register`, payload);
         toast.success("Registration successful!");
       }
-
       navigate("/login");
     } catch (error) {
       console.error("Register Error:", error);
@@ -78,6 +84,7 @@ export default function Register() {
               <div className="space-y-2">
                 <Label>Register as</Label>
                 <div className="flex gap-4">
+                  {/* {["organization", "employee", "customer", "admin"].map((r) => ( */}
                   {["organization", "employee", "customer"].map((r) => (
                     <label key={r} className="flex items-center gap-2 capitalize">
                       <input
@@ -167,6 +174,21 @@ export default function Register() {
                     />
                   </div>
                   {role == 'employee' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="designation">Designation</Label>
+                      <Input
+                        id="designation"
+                        type="text"
+                        placeholder="Manager"
+                        value={designation}
+                        onChange={(e) => setDesignation(e.target.value)}
+                        required
+                        className="h-11"
+                      />
+                    </div>
+                  )}
+
+                  {role == 'admin' && (
                     <div className="space-y-2">
                       <Label htmlFor="designation">Designation</Label>
                       <Input

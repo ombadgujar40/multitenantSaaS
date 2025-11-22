@@ -21,7 +21,7 @@ import {
   Plus,
 } from "lucide-react";
 import { toast } from "sonner";
-import axios from "axios";
+import api from "@/api/axios"
 import { empAuth } from "../../contexts/EmpContext";
 import { custAuth } from "../../contexts/CustContext";
 import ProjectModal from "@/components/ProjectModal.jsx";
@@ -47,7 +47,7 @@ export default function Projects() {
     const tok = token || localStorage.getItem('token')
     const fetchProjects = async () => {
       try {
-        const res = await axios.get("http://127.0.0.1:2000/project/getAllProjects", {
+        const res = await api.get("http://127.0.0.1:2000/project/getAllProjects", {
           headers: { Authorization: `Bearer ${tok}` }, params: { role: role }
         });
         setProjects(res.data || []);
@@ -94,7 +94,7 @@ export default function Projects() {
     try {
       if (status === "active") {
         // call an endpoint that will activate the project AND create the ChatGroup + members
-        const res = await axios.put(
+        const res = await api.put(
           `http://127.0.0.1:2000/project/activate/${projectId}`,
           { status },
           { headers: { Authorization: `Bearer ${tok}` } }
@@ -104,7 +104,7 @@ export default function Projects() {
         toast.success("Project accepted and group created!");
       } else {
         // fallback to existing update endpoint for other statuses (like rejected)
-        await axios.put(
+        await api.put(
           `http://127.0.0.1:2000/project/update/${projectId}`,
           { status },
           { headers: { Authorization: `Bearer ${tok}` } }
@@ -114,7 +114,7 @@ export default function Projects() {
 
       // refresh projects list after change
       try {
-        const resp = await axios.get("http://127.0.0.1:2000/project/getAllProjects", {
+        const resp = await api.get("http://127.0.0.1:2000/project/getAllProjects", {
           headers: { Authorization: `Bearer ${tok}` },
           params: { role: "admin" },
         });
@@ -134,7 +134,7 @@ export default function Projects() {
     if (!confirmation) return;
 
     try {
-      await axios.delete(`http://127.0.0.1:2000/project/delete/${id}`, {
+      await api.delete(`http://127.0.0.1:2000/project/delete/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
