@@ -39,14 +39,14 @@ export default function CustAdminDashboard() {
 
   const fetchStats = async () => {
     const tk = token || localStorage.getItem('token')
-    const data = await api.get(`http://127.0.0.1:2000/me`, {
+    const data = await api.get(`/me`, {
       headers: {
         Authorization: `Bearer ${tk}`
       }
     })
 
     const res = await api.get(
-      "http://127.0.0.1:2000/project/getAllProjects",
+      "/project/getAllProjects",
       {
         headers: { Authorization: `Bearer ${tk}` },
         params: { role: "customer" },

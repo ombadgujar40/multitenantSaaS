@@ -22,13 +22,13 @@ export default function ProjectDetail({ projectId, token }) {
     const fetchProjectDetails = async () => {
       const token = localStorage.getItem('token')
       try {
-        const res = await api.get(`http://127.0.0.1:2000/project/getProjectDetail/${projId}`, {
+        const res = await api.get(`/project/getProjectDetail/${projId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setProject(res.data);
 
         const taskRes = await api.get(
-          `http://127.0.0.1:2000/task/getProjectTasks/${projId}`,
+          `/task/getProjectTasks/${projId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

@@ -41,7 +41,7 @@ export default function Projects() {
   const fetchProjects = async (tok) => {
     try {
       const res = await api.get(
-        "http://127.0.0.1:2000/project/getAllProjects",
+        "/project/getAllProjects",
         {
           headers: { Authorization: `Bearer ${tok}` },
           params: { role: "customer" },
@@ -81,7 +81,7 @@ export default function Projects() {
     try {
       if (isEditMode) {
         await api.put(
-          `http://127.0.0.1:2000/project/update/${selectedProject.id}`,
+          `/project/update/${selectedProject.id}`,
           selectedProject,
           { headers: { Authorization: `Bearer ${tok}` } }
         );
@@ -89,7 +89,7 @@ export default function Projects() {
         toast.success("Project updated successfully!");
       } else {
         const res = await api.post(
-          `http://127.0.0.1:2000/project/register`,
+          `/project/register`,
           selectedProject,
           { headers: { Authorization: `Bearer ${tok}` } }
         );
@@ -109,7 +109,7 @@ export default function Projects() {
     if (!confirmation) return;
     const tok = token || localStorage.getItem("token");
     try {
-      await api.delete(`http://127.0.0.1:2000/project/delete/${id}`, {
+      await api.delete(`/project/delete/${id}`, {
         headers: { Authorization: `Bearer ${tok}` },
       });
       fetchProjects(tok)

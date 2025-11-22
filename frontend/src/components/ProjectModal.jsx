@@ -66,7 +66,7 @@ export default function ProjectModalAlt({
     const tok = token || localStorage.getItem('token')
     try {
       const res = await api.put(
-        `http://127.0.0.1:2000/project/update/${project.id}`,
+        `/project/update/${project.id}`,
         { link: deliverableLink },
         { headers: { Authorization: `Bearer ${tok}` } }
       );

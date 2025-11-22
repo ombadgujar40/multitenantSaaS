@@ -39,7 +39,7 @@ export default function Deleverables() {
         const tok = token || localStorage.getItem('token')
         const fetchProjects = async () => {
             try {
-                const res = await api.get("http://127.0.0.1:2000/project/getAllProjects", {
+                const res = await api.get("/project/getAllProjects", {
                     headers: { Authorization: `Bearer ${tok}` }, params: { role: "customer" }
                 });
                 console.log()
@@ -83,7 +83,7 @@ export default function Deleverables() {
         try {
             if (isEditMode) {
                 const res = await api.put(
-                    `http://127.0.0.1:2000/project/update/${selectedProject.id}`,
+                    `/project/update/${selectedProject.id}`,
                     selectedProject,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
@@ -98,7 +98,7 @@ export default function Deleverables() {
                 const payload = { ...selectedProject, orgName: org };
 
                 const res = await api.post(
-                    `http://127.0.0.1:2000/project/create`,
+                    `/project/create`,
                     payload,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
@@ -120,7 +120,7 @@ export default function Deleverables() {
         if (!confirmation) return;
 
         try {
-            await api.delete(`http://127.0.0.1:2000/project/delete/${id}`, {
+            await api.delete(`/project/delete/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 

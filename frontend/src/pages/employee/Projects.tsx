@@ -43,12 +43,12 @@ export default function Projects() {
     const fetchTasks = async () => {
       try {
         const tk = token || localStorage.getItem("token");
-        const data = await api.get(`http://127.0.0.1:2000/me`, {
+        const data = await api.get(`/me`, {
           headers: { Authorization: `Bearer ${tk}` },
         });
 
         const allTasks = await api.get(
-          "http://127.0.0.1:2000/task/getAllTasks",
+          "/task/getAllTasks",
           {
             headers: { Authorization: `Bearer ${tk}` },
             params: { role: "employee", id: data.data.data.id },
@@ -79,7 +79,7 @@ export default function Projects() {
       const tk = token || localStorage.getItem("token");
 
       await api.patch(
-        `http://127.0.0.1:2000/task/update/${taskId}`,
+        `/task/update/${taskId}`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${tk}` } }
       );

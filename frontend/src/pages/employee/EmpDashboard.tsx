@@ -35,12 +35,12 @@ export default function EmpAdminDashboard() {
 
   const fetchTasks = async () => {
     const tk = token || localStorage.getItem('token')
-    const data = await api.get(`http://127.0.0.1:2000/me`, {
+    const data = await api.get(`/me`, {
       headers: {
         Authorization: `Bearer ${tk}`
       }
     })
-    const allTasks = await api.get("http://127.0.0.1:2000/task/getAllTasks", {
+    const allTasks = await api.get("/task/getAllTasks", {
       headers: { Authorization: `Bearer ${tk}` }, params: { role: "employee", id: data.data.data.id }
     });
     const employeeId = data.data.data.id;
@@ -49,15 +49,15 @@ export default function EmpAdminDashboard() {
     setUniqueProjectIds(uniqueProjectIds)
     setTasks(allTasks.data)
 
-    const proComplete = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
+    const proComplete = await api.get("/project/getProjectsStats", {
       headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "completed", id: data.data.data.id }
     });
     setCompProjLen(proComplete.data.length)
-    const proActive = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
+    const proActive = await api.get("/project/getProjectsStats", {
       headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "active", id: data.data.data.id }
     });
     setActProjLen(proActive.data.length)
-    const proPending = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
+    const proPending = await api.get("/project/getProjectsStats", {
       headers: { Authorization: `Bearer ${tk}` }, params: { role: "customer", status: "pending", id: data.data.data.id }
     });
     setPendProjLen(proPending.data.length)
