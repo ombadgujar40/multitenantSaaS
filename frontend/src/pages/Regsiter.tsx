@@ -23,7 +23,7 @@ export default function Register() {
   // Fetch all organizations
   useEffect(() => {
     api
-      .get("http://127.0.0.1:2000/organization/all")
+      .get("/organization/all")
       .then((res) => setOrganizationList(res.data.map((org: any) => org.name)))
       .catch((err) => console.error("Error fetching orgs:", err));
   }, []);
