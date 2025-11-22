@@ -13,21 +13,21 @@ export const CustProvider = ({ children }) => {
         if (!token) return
         const getEmps = async () => {
             try {
-                const data = await api.get(`http://127.0.0.1:2000/me`, {
+                const data = await api.get(`/me`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
                 })
                 const org = data.data.data.orgId
                 if (!org) return
-                const orgName = await api.get(`http://127.0.0.1:2000/organization/one/${org}`)
+                const orgName = await api.get(`/organization/one/${org}`)
 
                 if (data.data.role == 'admin') {
                     const payload = {
                         orgId: org,
                         role: data.data.role
                     }
-                    const custs = await api.get(`http://localhost:2000/customer/getAllCusts`, { params: payload })
+                    const custs = await api.get(`/customer/getAllCusts`, { params: payload })
                     // console.log(custs.data)
                     setData(custs.data)
                     setOrg(orgName.data.name)
