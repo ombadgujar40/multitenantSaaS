@@ -23,14 +23,14 @@ export default function ReportsTab({ token }) {
         const tk = token || localStorage.getItem("token");
 
         // ----- Fetch Projects -----
-        const projectRes = await api.get("http://127.0.0.1:2000/project/getAllProjects", {
+        const projectRes = await api.get("/project/getAllProjects", {
           headers: { Authorization: `Bearer ${tk}` }, params: { role: 'admin' }
         });
         const projects = projectRes.data || [];
         // console.log(projectRes.data)
         
         // ----- Fetch Tasks -----
-        const taskRes = await api.get("http://127.0.0.1:2000/task/getAllTasks", {
+        const taskRes = await api.get("/task/getAllTasks", {
           headers: { Authorization: `Bearer ${tk}` }, params: { role: "admin" }
         });
         const tasks = taskRes.data || [];

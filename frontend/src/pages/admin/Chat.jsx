@@ -25,10 +25,10 @@ export default function Chat({ token: tokenProp, socketUrl: socketUrlProp, apiUr
   const joinedRoomRef = useRef(null);
   const myUserIdRef = useRef(null);
 
-  // const API_URL = apiUrlProp || process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:2000";
-  const API_URL = "http://127.0.0.1:2000";
+  const API_URL = import.meta.env.VITE_API_URL;
+  // const API_URL = "http://127.0.0.1:2000";
   // const SOCKET_URL = socketUrlProp || process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== "undefined" && window.location.origin) || "http://127.0.0.1:2000";
-  const SOCKET_URL = "http://127.0.0.1:2000";
+  const SOCKET_URL = import.meta.env.VITE_API_URL;
 
   const getToken = () => {
     if (tokenProp) return tokenProp;
@@ -125,7 +125,7 @@ export default function Chat({ token: tokenProp, socketUrl: socketUrlProp, apiUr
     const fetchGroups = async () => {
       setLoadingGroups(true);
       try {
-        const res = await api.get(`${API_URL}/chat/groups`, {
+        const res = await api.get(`/chat/groups`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (cancelled) return;
@@ -176,7 +176,7 @@ export default function Chat({ token: tokenProp, socketUrl: socketUrlProp, apiUr
     if (token) {
       setLoadingMessages(true);
       api
-        .get(`${API_URL}/chat/groups/${activeGroup}/messages`, {
+        .get(`/chat/groups/${activeGroup}/messages`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { limit: 200 },
         })

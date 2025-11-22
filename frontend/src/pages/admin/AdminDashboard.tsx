@@ -31,15 +31,15 @@ export default function AdminDashboard() {
 
     const fetchStats = async () => {
       if (data) setEmpNum(data.length)
-      const proComplete = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
+      const proComplete = await api.get("/project/getProjectsStats", {
         headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin", status: "completed" }
       });
       setCompProjLen(proComplete.data.length)
-      const proActive = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
+      const proActive = await api.get("/project/getProjectsStats", {
         headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin", status: "active" }
       });
       setActProjLen(proActive.data.length)
-      const proPending = await api.get("http://127.0.0.1:2000/project/getProjectsStats", {
+      const proPending = await api.get("/project/getProjectsStats", {
         headers: { Authorization: `Bearer ${tok}` }, params: { role: "admin", status: "pending" }
       });
       setPendProjLen(proPending.data.length)

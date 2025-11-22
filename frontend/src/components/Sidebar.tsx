@@ -30,7 +30,7 @@ export const Sidebar = () => {
         const tk = token || localStorage.getItem("token");
         if (!tk) return;
 
-        const res = await api.get("http://127.0.0.1:2000/me", {
+        const res = await api.get("/me", {
           headers: {
             Authorization: `Bearer ${tk}`,
           },
@@ -60,7 +60,7 @@ export const Sidebar = () => {
     { to: "/admin/projects", label: "Projects", icon: FolderKanban },
     { to: "/admin/chats", label: "Chat", icon: MessageSquare },
     { to: "/admin/reports", label: "Reports", icon: BarChart3 },
-    { to: "/admin/settings", label: "Settings", icon: Settings },
+    // { to: "/admin/settings", label: "Settings", icon: Settings },
   ];
 
   // 🔹 Employee Links
@@ -68,7 +68,7 @@ export const Sidebar = () => {
     { to: "/employee", label: "Dashboard", icon: LayoutDashboard },
     { to: "/employee/projects", label: "My Tasks", icon: FolderKanban },
     { to: "/admin/chats", label: "Chat", icon: MessageSquare },
-    { to: "/employee/settings", label: "Settings", icon: Settings },
+    // { to: "/employee/settings", label: "Settings", icon: Settings },
   ];
 
   // 🔹 Customer / Client Links
@@ -77,7 +77,7 @@ export const Sidebar = () => {
     { to: "/customer/projects", label: "My Projects", icon: FolderKanban },
     { to: "/customer/completed", label: "Deliverables", icon: CheckSquare },
     { to: "/admin/chats", label: "Chat", icon: MessageSquare },
-    { to: "/customer/settings", label: "Settings", icon: Settings },
+    // { to: "/customer/settings", label: "Settings", icon: Settings },
   ];
 
   // ✅ Choose links based on role

@@ -60,7 +60,7 @@ export default function Customers() {
     try {
       if (isEditMode) {
         const res = await api.put(
-          `http://127.0.0.1:2000/customer/update/${selectedCustomer.id}`,
+          `/customer/update/${selectedCustomer.id}`,
           selectedCustomer,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -74,7 +74,7 @@ export default function Customers() {
       } else {
         const payload = { ...selectedCustomer, orgName: org, password: `${selectedCustomer.name}` };
 
-        const res = await api.post(`http://127.0.0.1:2000/customer/register`, payload, {
+        const res = await api.post(`/customer/register`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -94,7 +94,7 @@ export default function Customers() {
     const confirmation = alert("Do you want to delete the user")
     if (confirmation) {
       try {
-        await api.delete(`http://127.0.0.1:2000/customer/delete/${id}`, {
+        await api.delete(`/customer/delete/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

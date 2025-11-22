@@ -65,8 +65,8 @@ export default function Employees() {
     try {
       if (isEditMode) {
         // --- EDIT EMPLOYEE ---
-        const res = await axios.put(
-          `http://127.0.0.1:2000/employee/update/${selectedEmp.id}`,
+        const res = await api.put(
+          `/employee/update/${selectedEmp.id}`,
           selectedEmp,
           {
             headers: { Authorization: `Bearer ${token}` },
@@ -95,8 +95,8 @@ export default function Employees() {
 
         console.log("Registering employee with:", payload);
 
-        const res = await axios.post(
-          `http://127.0.0.1:2000/employee/register`,
+        const res = await api.post(
+          `/employee/register`,
           { orgName: payload.orgName, name: payload.name, email: payload.email, password: payload.password, role: payload.role, designation: payload.jobPosition }
         );
 
@@ -115,7 +115,7 @@ export default function Employees() {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://127.0.0.1:2000/employee/delete/${id}`, {
+      await api.delete(`/employee/delete/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
