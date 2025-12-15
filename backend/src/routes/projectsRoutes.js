@@ -309,8 +309,8 @@ export const getProjectsStats = async (req, res) => {
 export const updateProject = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { id, organisation } = req.user || { id: req.body?.actorId || null, organisation: req.body?.organisation || null };
     const { name, description, status, link, dueDate } = req.body;
+    const { id } = req.user || {};
 
     const updateData = {};
 
@@ -329,28 +329,23 @@ export const updateProject = async (req, res) => {
       data: updateData,
     });
 
-    const metadata = buildMetadata(req, {
-      outcome: "SUCCESS",
-      actorRole: req.user?.role || null,
-      tenantId: updated.orgId || null,
-      resourceType: "PROJECT",
-      resourceId: updated.id,
-      extra: { before: before ? { id: before.id, name: before.name, status: before.status } : null, after: { id: updated.id, name: updated.name, status: updated.status } },
+    await createAudit({
+      req,
+      actorId: id || null,
+      actorEmail: req.user?.email || null,
+      action: "PROJECT_UPDATE",
+      target: { projectId: updated.id },
+      metadata: buildMetadata(req, {
+        outcome: "SUCCESS",
+        resourceType: "PROJECT",
+        resourceId: updated.id,
+        tenantId: updated.orgId,
+      }),
     });
-
-    await createAudit({ req, actorId: parseActorId(id), actorEmail: req.user?.email || null, action: "PROJECT_UPDATE", target: { projectId: updated.id }, metadata });
 
     return res.json(updated);
   } catch (error) {
     console.error("updateProject Error:", error);
-    await createErrorLog({
-      eventType: "update_project_exception",
-      severity: "HIGH",
-      message: error?.message || "Unknown error in updateProject",
-      tenantId: req.user?.organisation || null,
-      userId: req.user?.id || null,
-      payload: { stack: error?.stack || null, params: req.params, body: req.body },
-    });
     return res.status(500).json({ message: "Server error" });
   }
 };

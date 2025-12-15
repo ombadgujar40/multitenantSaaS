@@ -197,15 +197,18 @@ export default function Projects() {
                       size="sm"
                       variant="outline"
                       className="text-green-600 border-green-600 hover:bg-green-50 h-7 px-2 text-xs"
-                      onClick={() => handleStatusChange(project.id, "active")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(project.id, "active");
+                      }}
                     >
                       Accept
                     </Button>
+
                     <Button
                       size="sm"
                       variant="outline"
                       className="text-red-600 border-red-600 hover:bg-red-50 h-7 px-2 text-xs"
-
                       onClick={(e) => {
                         e.stopPropagation();
                         handleStatusChange(project.id, "rejected");
@@ -214,7 +217,7 @@ export default function Projects() {
                       Reject
                     </Button>
                   </div>
-                ) : project.status == 'rejected' ? (
+                ) : project.status === "rejected" ? (
                   <div className="flex gap-2">
                     <Button
                       size="sm"
@@ -222,18 +225,19 @@ export default function Projects() {
                       className="text-green-600 border-green-600 hover:bg-green-50 h-7 px-2 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleStatusChange(project.id, "rejected");
+                        handleStatusChange(project.id, "active");
                       }}
                     >
                       Accept
                     </Button>
-                    <Badge className={statusColors[project.status]}>
-                      {project.status}
-                    </Badge>
+
+                    <Badge className="bg-red-500 text-white">rejected</Badge>
                   </div>
-                ) : (<Badge className={statusColors[project.status]}>
-                  {project.status}
-                </Badge>)}
+                ) : (
+                  <Badge className={statusColors[project.status]}>
+                    {project.status}
+                  </Badge>
+                )}
               </div>
 
               <CardTitle className="mt-4">{project.name}</CardTitle>
