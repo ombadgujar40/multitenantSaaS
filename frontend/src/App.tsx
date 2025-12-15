@@ -28,6 +28,15 @@ import Reports from "./pages/admin/Reports.jsx"
 import Settings from "./pages/admin/Settings.jsx"
 import Deleverables from "./pages/customer/Deleverables.jsx"
 import ProjectDetail from "./pages/customer/ProjectDetail.jsx"
+import DashBoard from "./pages/superadmin/DashBoard.jsx"
+import SuperAdminLogin from "./pages/superadmin/Login.jsx"
+import Setting from "./pages/superadmin/Setting.jsx"
+import Errors from "./pages/superadmin/Errors.jsx"
+import Billing from "./pages/superadmin/Billing.jsx"
+import Audit from "./pages/superadmin/Audit.jsx"
+import Tennents from "./pages/superadmin/Tennents.jsx"
+
+
 
 const queryClient = new QueryClient();
 
@@ -44,6 +53,7 @@ const App = () => (
                 <Route path="/" element={<Login />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/superAdmin/login" element={<SuperAdminLogin />} />
 
                 <Route path="/admin" element={<DashboardLayout />}>
                   <Route index element={<AdminDashboard />} />
@@ -53,6 +63,16 @@ const App = () => (
                   <Route path="chats" element={<Chat />} />
                   <Route path="reports" element={<Reports />} />
                   <Route path="settings" element={<Settings />} />
+                </Route>
+
+
+                <Route path="/superAdmin" element={<DashboardLayout />}>
+                  <Route index element={<DashBoard />} />
+                  <Route path="tenants" element={<Tennents />} />
+                  <Route path="audit" element={<Audit />} />
+                  <Route path="billing" element={<Billing />} />
+                  <Route path="errors" element={<Errors />} />
+                  <Route path="settings" element={<Setting />} />
                 </Route>
 
 

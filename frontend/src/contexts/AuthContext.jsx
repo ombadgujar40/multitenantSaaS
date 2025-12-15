@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
           }
         })
 
+
         setId(data.data.id)
         setOrgId(data.data.organisation)
       } catch (error) {
@@ -57,6 +58,27 @@ export const AuthProvider = ({ children }) => {
     }
   } 
 
+  const SuperAdminlogin = async (email, password) => {
+
+    const cred = {
+      email, password
+    }
+    try {
+      const data = await api.post(`/superadmin/login`, cred) 
+      if (!data) {
+        console.log("error in login context function")
+      }
+
+      const tk = data.data.token
+      localStorage.setItem('token', tk)
+      setToken(tk)
+
+      return {sucess: true, tok: tk}
+    } catch (error) {
+      console.log(error)
+      return {sucess: false}
+    }
+  } 
 
   const logout = async (req, res) => {
     localStorage.removeItem('token')
@@ -66,7 +88,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{token, login, id, orgId, logout}}
+      value={{token, login, id, orgId, logout, SuperAdminlogin}}
     >
       {children}
     </AuthContext.Provider>

@@ -12,6 +12,10 @@ import {
 
 const router = express.Router();
 
+router.get("/health", (req, res) => {
+  res.status(200).json({ok: true});
+});
+
 /**
  * Routes:
  * GET    /groups                        -> get groups for current user

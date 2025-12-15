@@ -13,6 +13,10 @@ import {
   Building2,
   BarChart3,
   Settings,
+  Building,
+  ListChecks,
+  CreditCard,
+  AlertTriangle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -44,7 +48,7 @@ export const Sidebar = () => {
       }
     };
 
-    getUserData();
+    if(token) getUserData();
   }, [token]);
 
   // ✅ Logout handler
@@ -62,6 +66,15 @@ export const Sidebar = () => {
     { to: "/admin/reports", label: "Reports", icon: BarChart3 },
     // { to: "/admin/settings", label: "Settings", icon: Settings },
   ];
+
+  const superAdminLinks = [
+  { to: "/superAdmin", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/superAdmin/tenants", label: "Tenants", icon: Building },
+  { to: "/superAdmin/audit", label: "Audit Logs", icon: ListChecks },
+  { to: "/superAdmin/billing", label: "Billing", icon: CreditCard },       // can be stubbed
+  { to: "/superAdmin/errors", label: "Errors & Monitoring", icon: AlertTriangle },
+  // { to: "/superAdmin/settings", label: "Settings", icon: Settings }
+];
 
   // 🔹 Employee Links
   const employeeLinks = [
@@ -88,6 +101,8 @@ export const Sidebar = () => {
       ? employeeLinks
       : role === "customer" || role === "client"
       ? customerLinks
+      : role === "superAdmin"
+      ? superAdminLinks
       : [];
 
 

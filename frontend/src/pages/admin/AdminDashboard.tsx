@@ -30,7 +30,7 @@ export default function AdminDashboard() {
 
 
   useEffect(() => {
-    if(!token) navigate('/')
+    if(!token) navigate('/admin/login')
   }, [token])
 
   useEffect(() => {

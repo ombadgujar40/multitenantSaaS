@@ -16,6 +16,7 @@ export default function Register() {
   const [role, setRole] = useState("customer");
   const [designation, setDesignation] = useState("");
   const [orgName, setOrgName] = useState(""); // input or select depending on role
+  const [domain, setDomain] = useState(""); 
   const [isLoad, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [organizationList, setOrganizationList] = useState<string[]>([]);
@@ -35,7 +36,7 @@ export default function Register() {
     try {
       if (role === "organization") {
         // Register as new organization
-        const orgData = { name: orgName };
+        const orgData = { name: orgName, Domain: domain };
         const res = await api.post("/organization/register", orgData);
         toast.success("Organization registered successfully!");
       } else if (role === "admin") {
@@ -115,6 +116,16 @@ export default function Register() {
                     placeholder="Techify Solutions"
                     value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
+                    required
+                    className="h-11"
+                  />
+                  <Label htmlFor="orgName">Domain</Label>
+                  <Input
+                    id="domain"
+                    type="text"
+                    placeholder="Domain"
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
                     required
                     className="h-11"
                   />

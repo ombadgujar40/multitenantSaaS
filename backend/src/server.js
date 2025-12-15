@@ -4,6 +4,7 @@ import cors from "cors"
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { PrismaClient } from "@prisma/client";
+import { pruneAuditLogsIfNeeded } from "./utils/auditRetention.js";
 
 
 import login from "./controllers/authLogin.js"
@@ -14,6 +15,12 @@ import allroute from "./controllers/generalAuth.js"
 import projectRoute from "./controllers/projectsControler.js"
 import taskRoute from "./controllers/taskControler.js"
 import chatRoutes from "./controllers/chatController.js";
+import superAdminRoute from "./controllers/superAdminController.js"
+import planRoute from "./controllers/planController.js"
+import auditRoutes from "./controllers/auditController.js"
+import errorRoute from "./controllers/errorController.js"
+
+
 
 
 
@@ -27,8 +34,12 @@ app.use(express.json())
 
 app.use(allroute)
 app.use(login)
+app.use("/errors", errorRoute)
+app.use("/audits", auditRoutes)
+app.use("/plans", planRoute)
 app.use("/project", projectRoute)
 app.use("/task", taskRoute)
+app.use("/superadmin", superAdminRoute)
 app.use("/organization", orgauthroutes)
 app.use("/employee", empauthroutes)
 app.use("/chat", chatRoutes);
@@ -55,4 +66,11 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
+  // Optional: run once on startup
+  pruneAuditLogsIfNeeded();
+
+  // Schedule periodic pruning (every 30 minutes)
+  setInterval(() => {
+    pruneAuditLogsIfNeeded();
+  }, 30 * 60 * 1000);
 });

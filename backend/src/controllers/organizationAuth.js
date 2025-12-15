@@ -1,16 +1,16 @@
-import express from "express"
-import { register, getAll, getOne } from "../routes/orgAuth.js"
-const router = express.Router()
+import express from "express";
+import { register, getAll, getOne, updateOrg } from "../routes/orgAuth.js";
+import { verifyToken } from "../middleware/verifytoken.js"; // optional: use if you have it
+import { requirePlatformAdmin } from "../middleware/requirePlatformAdmin.js";
 
-router.get("/", (req, res) => {
-    res.send("Organization routes")
-})
+const router = express.Router();
+router.get("/health", (req, res) => {
+  res.status(200).json({ok: true});
+});
 
-router.post("/register", register)
-router.get("/all", getAll)
-router.get("/one/:id", getOne)
-
-
-export default router
-
-
+// keep public API same so frontend needs no change
+router.post("/register", register);
+router.get("/all", getAll);
+router.get("/one/:id", getOne);
+router.put("/updateplan/:id", verifyToken, requirePlatformAdmin, updateOrg);
+export default router;
