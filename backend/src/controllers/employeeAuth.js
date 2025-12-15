@@ -9,7 +9,7 @@ router.get("/health", (req, res) => {
 
 router.post("/register", register);
 router.get("/getAllEmps", getEmps);
-router.put("/update/:id", verifyToken, updateEmp);
+router.put("/update/:id", updateEmp);
 router.delete("/delete/:id", deleteEmp);
 
 // optional: if you expose login here (keeps frontend unchanged)
