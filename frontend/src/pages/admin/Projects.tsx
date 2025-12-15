@@ -153,7 +153,7 @@ export default function Projects() {
       project.tasks?.filter((t) => t.status === "completed").length || 0;
     const projectProgress =
       totalTasks > 0 ? (project.tasks?.filter((t) => t.status === "completed").length / totalTasks) * 100 : 0;
-      return projectProgress > 0 ? Math.round(projectProgress) : 0;
+    return projectProgress > 0 ? Math.round(projectProgress) : 0;
   }
   // -------- UI ----------
   const statusColors = {
@@ -206,7 +206,11 @@ export default function Projects() {
                       size="sm"
                       variant="outline"
                       className="text-red-600 border-red-600 hover:bg-red-50 h-7 px-2 text-xs"
-                      onClick={() => handleStatusChange(project.id, "rejected")}
+
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(project.id, "rejected");
+                      }}
                     >
                       Reject
                     </Button>
@@ -217,7 +221,10 @@ export default function Projects() {
                       size="sm"
                       variant="outline"
                       className="text-green-600 border-green-600 hover:bg-green-50 h-7 px-2 text-xs"
-                      onClick={() => handleStatusChange(project.id, "active")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(project.id, "rejected");
+                      }}
                     >
                       Accept
                     </Button>
