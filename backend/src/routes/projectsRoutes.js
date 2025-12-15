@@ -312,17 +312,21 @@ export const updateProject = async (req, res) => {
     const { id, organisation } = req.user || { id: req.body?.actorId || null, organisation: req.body?.organisation || null };
     const { name, description, status, link, dueDate } = req.body;
 
-    const parsedDueDate =
-      dueDate && !isNaN(new Date(dueDate))
-        ? new Date(dueDate).toISOString()
-        : undefined;
-    // Read old record (before snapshot)
-    const before = await prisma.project.findUnique({ where: { id: Number(projectId) } });
+    const updateData = {};
 
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (status !== undefined) updateData.status = status;
+    if (link !== undefined) updateData.deliverableLink = link;
+
+    if (dueDate) {
+      const d = new Date(dueDate);
+      if (!isNaN(d)) updateData.dueDate = d.toISOString();
+    }
 
     const updated = await prisma.project.update({
       where: { id: Number(projectId) },
-      data: { name, description, status: status || null, deliverableLink: link, ...(parsedDueDate && { dueDate: parsedDueDate }) },
+      data: updateData,
     });
 
     const metadata = buildMetadata(req, {
