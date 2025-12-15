@@ -317,7 +317,7 @@ export const updateProject = async (req, res) => {
 
     const updated = await prisma.project.update({
       where: { id: Number(projectId) },
-      data: { name, description, status, deliverableLink: link, dueDate: new Date(dueDate).toISOString() },
+      data: { name, description, status: status || null, deliverableLink: link, dueDate: new Date(dueDate).toISOString() },
     });
 
     const metadata = buildMetadata(req, {
@@ -431,7 +431,7 @@ export const getProjectDetail = async (req, res) => {
 };
 
 export const handleAcceptProject = async (req, res) => {
-  const projectId = Number(req.params.id);
+  const projectId = Number(req.params.projectId);
 
   try {
     // transaction to update project, create group, add members, add system message
