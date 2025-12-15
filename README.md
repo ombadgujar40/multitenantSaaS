@@ -237,3 +237,65 @@ Issues and pull requests are welcome for improvements, optimizations, or additio
 📄 License
 
 MIT License
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------🔑 Demo Login Credentials (For Evaluation Only)
+
+⚠️ These are demo-only accounts with non-sensitive data.
+Do not use real credentials or production secrets.
+
+🛡️ SuperAdmin (Platform Level)
+
+Email: superadmin@platform.com
+
+Password: Super@123
+
+Access: View all organizations, metrics, platform controls
+
+🏢 Organization Admin
+
+NovaTech Solutions
+
+Email: arjun.admin@novatech.com
+
+Password: Admin@123
+
+Access: Org management, employees, projects, tasks
+
+👨‍💼 Employee
+
+NovaTech Solutions
+
+Email: kunal@novatech.com
+
+Password: Emp@123
+
+Access: Assigned tasks, project chats
+
+👤 Customer
+
+PixelMart Pvt Ltd
+
+Email: contact@pixelmart.com
+
+Password: Cust@123
+
+Access: Project status, chat, deliverables
+
+🔐 Notes
+
+All passwords are dummy credentials
+
+Data is isolated per tenant
+
+Role-based access is strictly enforced
+
+Actions are audited in the system
+
+Extra polish (optional but powerful)
+
+Add this line right after the credentials section:
+
+💡 Tip: Try logging in as different roles to observe RBAC enforcement and tenant isolation.
