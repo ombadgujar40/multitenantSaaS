@@ -125,7 +125,6 @@ export default function Projects() {
       }
     } catch (error) {
       console.error("Status change failed", error);
-      toast.error("Action failed! Check console for details.");
     }
   };
   // -------- Delete ----------
