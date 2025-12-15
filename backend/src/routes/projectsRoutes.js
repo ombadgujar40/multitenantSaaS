@@ -312,12 +312,17 @@ export const updateProject = async (req, res) => {
     const { id, organisation } = req.user || { id: req.body?.actorId || null, organisation: req.body?.organisation || null };
     const { name, description, status, link, dueDate } = req.body;
 
+    const parsedDueDate =
+      dueDate && !isNaN(new Date(dueDate))
+        ? new Date(dueDate).toISOString()
+        : undefined;
     // Read old record (before snapshot)
     const before = await prisma.project.findUnique({ where: { id: Number(projectId) } });
 
+
     const updated = await prisma.project.update({
       where: { id: Number(projectId) },
-      data: { name, description, status: status || null, deliverableLink: link, dueDate: new Date(dueDate).toISOString() },
+      data: { name, description, status: status || null, deliverableLink: link, ...(parsedDueDate && { dueDate: parsedDueDate }) },
     });
 
     const metadata = buildMetadata(req, {
@@ -431,8 +436,20 @@ export const getProjectDetail = async (req, res) => {
 };
 
 export const handleAcceptProject = async (req, res) => {
-  const projectId = Number(req.params.projectId);
+  const rawId = req.params?.projectId;
+  const projectId = Number(rawId);
+  if (!rawId || Number.isNaN(projectId)) {
+    console.error("INVALID PROJECT ID", {
+      params: req.params,
+      url: req.originalUrl,
+    });
 
+    return res.status(400).json({
+      ok: false,
+      message: "Invalid or missing projectId",
+      params: req.params,
+    });
+  }
   try {
     // transaction to update project, create group, add members, add system message
     const result = await prisma.$transaction(async (tx) => {
