@@ -13,7 +13,7 @@ router.get("/getAllProjects", verifyToken, getProjects);
 router.get("/getProjectsStats", verifyToken, getProjectsStats);
 router.get("/getProjectDetail/:projId", getProjectDetail);
 router.put("/update/:projectId", verifyToken, updateProject);
-router.put("/activate/:id", verifyToken, handleAcceptProject);
+router.put("/activate/:projectId", verifyToken, handleAcceptProject);
 router.delete("/delete/:id", deleteProject);
 
 export default router;
