@@ -102,7 +102,7 @@ export default function Projects() {
 
         // res.data should contain updated project and optionally created group
         toast.success("Project accepted and group created!");
-      } else {
+      } else if (status === "rejected") {
         // fallback to existing update endpoint for other statuses (like rejected)
         const resp = await api.put(
           `/project/update/${projectId}`,
@@ -110,6 +110,8 @@ export default function Projects() {
           { headers: { Authorization: `Bearer ${tok}` } }
         );
         toast.success("Project status updated!");
+      } else {
+        toast.error("failed to change status");
       }
 
       // refresh projects list after change
@@ -125,6 +127,7 @@ export default function Projects() {
       }
     } catch (error) {
       console.error("Status change failed", error);
+      toast.error("failed to change status");
     }
   };
   // -------- Delete ----------
