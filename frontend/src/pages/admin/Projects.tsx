@@ -104,7 +104,7 @@ export default function Projects() {
         toast.success("Project accepted and group created!");
       } else {
         // fallback to existing update endpoint for other statuses (like rejected)
-        await api.put(
+        const resp = await api.put(
           `/project/update/${projectId}`,
           { status },
           { headers: { Authorization: `Bearer ${tok}` } }
