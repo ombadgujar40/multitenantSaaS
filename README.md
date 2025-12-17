@@ -268,7 +268,7 @@ Access: Org management, employees, projects, tasks
 
 NovaTech Solutions
 
-Email: kunal@novatech.com
+Email: sneha@novatech.com
 
 Password: Emp@123
 
@@ -299,3 +299,4 @@ Extra polish (optional but powerful)
 Add this line right after the credentials section:
 
 💡 Tip: Try logging in as different roles to observe RBAC enforcement and tenant isolation.
+
