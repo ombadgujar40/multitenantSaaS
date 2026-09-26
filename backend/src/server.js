@@ -81,9 +81,10 @@ app.use((req, res, next) => {
 app.get("/metrics", async (req, res) => {
   res.set("Content-Type", register.contentType);
 
-  const metrics = await register.metrics();
+  const appMetrics = await register.metrics();
+  const prismaMetrics = await prisma.$metrics.prometheus();
 
-  res.end(metrics);
+  res.end(appMetrics + "\n" + prismaMetrics);
 });
 app.use(cors())
 app.use(express.json())

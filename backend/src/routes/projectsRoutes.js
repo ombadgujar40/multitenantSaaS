@@ -209,7 +209,8 @@ export const getProjects = async (req, res) => {
         });
 
         await createAudit({ req, actorId: id, actorEmail: req.user?.email || null, action: "PROJECT_LIST", target: null, metadata });
-        return res.status(200).send(custResp);
+        
+        return res.status(200).send(custResp);        
       }
 
       default: {
