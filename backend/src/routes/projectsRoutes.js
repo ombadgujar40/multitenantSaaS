@@ -195,6 +195,7 @@ export const getProjects = async (req, res) => {
       }
 
       case "customer": {
+        await new Promise(resolve => setTimeout(resolve, 5000));
         const custResp = await prisma.project.findMany({
           where: { orgId: organisation, customerId: id },
           select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, deliverableLink: true, dueDate: true },
