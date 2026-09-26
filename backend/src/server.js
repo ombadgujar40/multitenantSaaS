@@ -3,7 +3,9 @@ import express from "express"
 import cors from "cors"
 import { createServer } from "http";
 import { Server } from "socket.io";
-import { PrismaClient } from "@prisma/client";
+// import { PrismaClient } from "@prisma/client";
+import { prisma } from "./config/prismaconfig.js";
+import client from "prom-client";
 import { pruneAuditLogsIfNeeded } from "./utils/auditRetention.js";
 
 
@@ -20,15 +22,69 @@ import planRoute from "./controllers/planController.js"
 import auditRoutes from "./controllers/auditController.js"
 import errorRoute from "./controllers/errorController.js"
 
+const register = new client.Registry();
 
+client.collectDefaultMetrics({
+  register,
+});
+
+const httpRequestsTotal = new client.Counter({
+  name: "http_requests_total",
+  help: "Total number of HTTP requests",
+  labelNames: ["method", "route", "status_code"],
+  registers: [register],
+});
+
+const httpRequestDuration = new client.Histogram({
+  name: "http_request_duration_seconds",
+  help: "HTTP request duration in seconds",
+  labelNames: ["method", "route", "status_code"],
+  registers: [register],
+});
 
 
 
 // import socket controller initializer
 import { initSocketController } from "./controllers/socketController.js";
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 const app = express()
+
+app.use((req, res, next) => {
+  const start = process.hrtime();
+
+  res.on("finish", () => {
+    const duration = process.hrtime(start);
+    const durationSeconds = duration[0] + duration[1] / 1e9;
+
+    const route = req.route?.path || req.path;
+
+    httpRequestsTotal.inc({
+      method: req.method,
+      route,
+      status_code: res.statusCode,
+    });
+
+    httpRequestDuration.observe(
+      {
+        method: req.method,
+        route,
+        status_code: res.statusCode,
+      },
+      durationSeconds
+    );
+  });
+
+  next();
+});
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", register.contentType);
+
+  const metrics = await register.metrics();
+
+  res.end(metrics);
+});
 app.use(cors())
 app.use(express.json())
 
