@@ -1,12 +1,6 @@
 import { prisma } from "../config/prismaconfig.js";
 import { v4 as uuidv4 } from "uuid";
-import { redisClient } from "../config/reddis.js";
-import {
-  customerStatsCacheHits,
-  customerStatsCacheMisses,
-  customerStatsRedisErrors,
-  customerStatsDbQueries,
-} from "../config/metrics.js";
+
 
 /* -------------------
    Helpers (shared style)
@@ -463,6 +457,7 @@ export const getProjectsStats = async (req, res) => {
 
 
 
+
 export const getCustomerStats = async (req, res) => {
   const { id, organisation, role } = req.user || {};
 
@@ -481,24 +476,7 @@ export const getCustomerStats = async (req, res) => {
     });
   }
 
-  const cacheKey = `customerStats:org:${organisation}:customer:${id}`;
-
   try {
-    // 1. Try Redis first.
-    if (redisClient.isReady) {
-      try {
-        const cached = await redisClient.get(cacheKey);
-
-        if (cached !== null) {
-          res.set("X-Cache", "HIT");
-          return res.status(200).json(JSON.parse(cached));
-        }
-      } catch (error) {
-        console.error("Redis cache read failed:", error.message);
-      }
-    }
-
-    // 2. Cache miss: query PostgreSQL.
     const baseWhere = {
       orgId: organisation,
       customerId: id,
@@ -516,28 +494,20 @@ export const getCustomerStats = async (req, res) => {
       }),
     ]);
 
-    const stats = { active, completed, pending };
-
-    // 3. Cache for 30 seconds when Redis is available.
-    if (redisClient.isReady) {
-      try {
-        await redisClient.set(cacheKey, JSON.stringify(stats), {
-          EX: 30,
-        });
-      } catch (error) {
-        console.error("Redis cache write failed:", error.message);
-      }
-    }
-
-    res.set("X-Cache", "MISS");
-    return res.status(200).json(stats);
+    return res.status(200).json({
+      active,
+      completed,
+      pending,
+    });
   } catch (error) {
     console.error("getCustomerStats error:", error);
+
     return res.status(500).json({
       message: "Failed to retrieve customer project statistics",
     });
   }
 };
+
 
 
 
