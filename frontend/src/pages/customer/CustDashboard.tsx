@@ -37,30 +37,29 @@ export default function CustAdminDashboard() {
     fetchStats()
   }, [token])
 
+
   const fetchStats = async () => {
-    const tk = token || localStorage.getItem('token')
-    const data = await api.get(`/me`, {
-      headers: {
-        Authorization: `Bearer ${tk}`
-      }
-    })
+    const tk = token || localStorage.getItem("token");
 
-    const res = await api.get(
-      "/project/getAllProjects",
-      {
-        headers: { Authorization: `Bearer ${tk}` },
-        params: { role: "customer" },
-      }
-    );
+    if (!tk) {
+      navigate("/login");
+      return;
+    }
 
-    // console.log(res.data[0].status)
-    const proComplete = res.data.filter((e) => e.status =='completed')
-    const proActive = res.data.filter((e) => e.status =='active')
-    const proPending = res.data.filter((e) => e.status =='pending')
-    setActProjLen(proActive.length)
-    setCompProjLen(proComplete.length)
-    setPendProjLen(proPending.length)
-  }
+    try {
+      const res = await api.get("/project/customerStats", {
+        headers: {
+          Authorization: `Bearer ${tk}`,
+        },
+      });
+
+      setActProjLen(res.data.active);
+      setCompProjLen(res.data.completed);
+      setPendProjLen(res.data.pending);
+    } catch (error) {
+      console.error("Failed to fetch customer dashboard stats:", error);
+    }
+  };
 
 
   const stats = [
@@ -71,10 +70,10 @@ export default function CustAdminDashboard() {
   ];
 
   const pieData = [
-  { name: "Completed", value: CompLen, color: "hsl(var(--success))" },
-  { name: "In Progress", value: ActLen, color: "hsl(var(--primary))" },
-  { name: "Pending", value: PendLen, color: "hsl(var(--warning))" },
-];
+    { name: "Completed", value: CompLen, color: "hsl(var(--success))" },
+    { name: "In Progress", value: ActLen, color: "hsl(var(--primary))" },
+    { name: "Pending", value: PendLen, color: "hsl(var(--warning))" },
+  ];
 
   return (
     <div className="space-y-8 animate-fade-in">

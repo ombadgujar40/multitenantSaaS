@@ -3,10 +3,17 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Users, Calendar, FolderKanban } from "lucide-react";
+import { Users, Calendar, FolderKanban, Trash2 } from "lucide-react";
 import api from "@/api/axios.js";
 import { toast } from "sonner";
 import { useParams, useNavigate } from "react-router-dom";
+import { Plus, UserPlus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ProjectDetail({ projectId, token }) {
   const [project, setProject] = useState(null);
@@ -14,6 +21,16 @@ export default function ProjectDetail({ projectId, token }) {
   const [team, setTeam] = useState([]);
   const { projId } = useParams();
   const navigate = useNavigate();
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    assignedToId: "",
+    dueDate: "",
+  });
 
   // Fetch project details + tasks
   useEffect(() => {
@@ -51,6 +68,39 @@ export default function ProjectDetail({ projectId, token }) {
 
     fetchProjectDetails();
   }, [projId, token]);
+
+  useEffect(() => {
+    console.log("Employee effect triggered", {
+      isAddTaskOpen,
+      project,
+    });
+
+    if (!isAddTaskOpen) return;
+
+    const fetchEmployees = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await api.get("/employee/getAllEmps", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        // console.log("Employee response:", res.data);
+        setEmployees(res.data || []);
+      } catch (err) {
+        console.error(
+          "Employee request failed:",
+          err.response?.status,
+          err.response?.data || err.message
+        );
+      }
+    };
+
+    fetchEmployees();
+  }, [isAddTaskOpen]);
+
   if (!project)
     return (
       <div className="flex justify-center items-center h-screen">
@@ -61,6 +111,132 @@ export default function ProjectDetail({ projectId, token }) {
   const completedTasks = tasks.filter((t) => t.status === "completed").length;
   const progress =
     tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+
+    if (!formData.title.trim()) {
+      toast.error("Task title is required");
+      return;
+    }
+
+    setIsCreatingTask(true);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await api.post(
+        "/task/register",
+        {
+          projectId: Number(projId),
+          title: formData.title.trim(),
+          description: formData.description.trim() || null,
+          assignedToId: formData.assignedToId
+            ? Number(formData.assignedToId)
+            : null,
+          dueDate: formData.dueDate || null,
+          status: "pending",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const taskRes = await api.get(
+        `/task/getProjectTasks/${projId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setTasks(taskRes.data || []);
+
+      const uniqueEmployees = Object.values(
+        (taskRes.data || []).reduce((acc, task) => {
+          if (task.assignedTo) {
+            acc[task.assignedTo.id] = task.assignedTo;
+          }
+          return acc;
+        }, {})
+      );
+
+      setTeam(uniqueEmployees);
+
+      setFormData({
+        title: "",
+        description: "",
+        assignedToId: "",
+        dueDate: "",
+      });
+
+      setIsAddTaskOpen(false);
+      toast.success("Task created successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err.response?.data?.message || "Failed to create task"
+      );
+    } finally {
+      setIsCreatingTask(false);
+    }
+  };
+
+
+  const handleDeleteTask = async (taskId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this task?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await api.delete(`/task/delete/${taskId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Refresh tasks from the backend
+      const taskRes = await api.get(
+        `/task/getProjectTasks/${projId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const updatedTasks = taskRes.data || [];
+      setTasks(updatedTasks);
+
+      // Recalculate the visible team from remaining task assignments
+      const uniqueEmployees = Object.values(
+        updatedTasks.reduce((acc, task) => {
+          if (task.assignedTo) {
+            acc[task.assignedTo.id] = task.assignedTo;
+          }
+          return acc;
+        }, {})
+      );
+
+      setTeam(uniqueEmployees);
+
+      toast.success("Task deleted successfully");
+    } catch (err) {
+      console.error("Delete task failed:", err);
+
+      toast.error(
+        err.response?.data?.message || "Failed to delete task"
+      );
+    }
+  };
+
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8 animate-fade-in">
@@ -155,9 +331,17 @@ export default function ProjectDetail({ projectId, token }) {
 
       {/* Tasks Section */}
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <FolderKanban className="h-5 w-5 text-primary" /> Project Tasks
-        </h2>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <FolderKanban className="h-5 w-5 text-primary" />
+            Project Tasks
+          </h2>
+
+          <Button onClick={() => setIsAddTaskOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Task
+          </Button>
+        </div>
 
         {tasks.length === 0 ? (
           <p className="text-muted-foreground text-sm">
@@ -171,7 +355,37 @@ export default function ProjectDetail({ projectId, token }) {
                 className="p-4 border hover:shadow-md transition"
               >
                 <div className="flex justify-between items-center">
-                  <h3 className="font-medium">{task.title}</h3>
+
+                  <div className="flex justify-between items-center gap-3">
+                    <h3 className="font-medium">{task.title}</h3>
+
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        className={`${task.status === "completed"
+                          ? "bg-green-100 text-green-600"
+                          : task.status === "in_progress"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-gray-100 text-gray-600"
+                          }`}
+                      >
+                        {task.status}
+                      </Badge>
+
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteTask(task.id)}
+                        aria-label={`Delete task ${task.title}`}
+                        title="Delete task"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+
+                    </div>
+                  </div>
+
                   <Badge
                     className={`${task.status === "completed"
                       ? "bg-green-100 text-green-600"
@@ -207,6 +421,113 @@ export default function ProjectDetail({ projectId, token }) {
           </div>
         )}
       </section>
-    </div>
+
+
+      <Dialog open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Task</DialogTitle>
+            <DialogDescription>
+              Create a task and optionally assign it to an employee.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            onSubmit={handleCreateTask}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="task-title">Task Title</Label>
+              <Input
+                id="task-title"
+                placeholder="Enter task title"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="task-description">Description</Label>
+              <Textarea
+                id="task-description"
+                placeholder="Describe the task..."
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+              />
+            </div>
+
+
+            <div className="space-y-2">
+              <Label>Assign Employee</Label>
+
+              <Select sideOffset={4} position="popper"
+                value={formData.assignedToId ?? ""}
+                onValueChange={(value) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    assignedToId: value,
+                  }));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an employee" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {employees.map((employee) => (
+                    <SelectItem
+                      key={employee.id}
+                      value={String(employee.id)}
+                    >
+                      {employee.name} — {employee.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+
+            {employees.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No employees available.
+              </p>
+            )}
+
+
+            <div className="space-y-2">
+              <Label htmlFor="task-due-date">Due Date</Label>
+              <Input
+                id="task-due-date"
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, dueDate: e.target.value })
+                }
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsAddTaskOpen(false)}
+              >
+                Cancel
+              </Button>
+
+              <Button type="submit" disabled={isCreatingTask}>
+                {isCreatingTask ? "Creating..." : "Create Task"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+    </div >
   );
 }

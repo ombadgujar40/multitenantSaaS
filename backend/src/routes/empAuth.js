@@ -310,69 +310,94 @@ export const register = async (req, res) => {
 /**
  * get employees (list)
  */
+
 export const getEmps = async (req, res) => {
   try {
-    const { orgId, role } = req.query;
+    const actor = req.user;
 
-    const actor = req.user || { id: req.body?.actorId || null, role: req.query?.role || req.body?.actorRole || null, email: req.body?.actorEmail || null };
-
-    if (role !== "admin") {
-      const metadata = buildMetadata(req, {
-        outcome: "DENIED",
-        outcomeReason: "UNAUTHORIZED_ACCESS",
-        actorRole: actor?.role || null,
-        tenantId: orgId ? Number(orgId) : null,
-        resourceType: "EMPLOYEE",
+    // Require an authenticated user
+    if (!actor) {
+      return res.status(401).json({
+        message: "Authentication required",
       });
+    }
 
-      await createAudit({
-        req,
-        actorId: parseActorId(actor?.id),
-        actorEmail: actor?.email || null,
-        action: "EMPLOYEE_LIST",
-        target: null,
-        metadata,
+    // Allow only admins and customers
+    if (!["admin", "customer"].includes(actor.role)) {
+      return res.status(403).json({
+        message: "Unauthorized access",
       });
+    }
 
-      return res.status(403).send("Unauthorized Access");
+    // Use the organization from the verified token,
+    // not from client-supplied query parameters.
+    const orgId = Number(actor.organisation);
+
+    if (!Number.isInteger(orgId) || orgId <= 0) {
+      return res.status(403).json({
+        message: "Invalid organization context",
+      });
     }
 
     const resp = await prisma.employee.findMany({
-      where: { role: "employee", orgId: Number(orgId) },
-      select: { id: true, name: true, email: true, role: true, jobPosition: true, createdAt: true, orgId: true }
+      where: {
+        role: "employee",
+        orgId: orgId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        jobPosition: true,
+        orgId: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
     });
 
     const metadata = buildMetadata(req, {
       outcome: "SUCCESS",
-      actorRole: actor?.role || null,
-      tenantId: orgId ? Number(orgId) : null,
+      actorRole: actor.role,
+      tenantId: orgId,
       resourceType: "EMPLOYEE",
-      extra: { resultCount: resp.length }
+      extra: {
+        resultCount: resp.length,
+      },
     });
 
     await createAudit({
       req,
-      actorId: parseActorId(actor?.id),
-      actorEmail: actor?.email || null,
+      actorId: parseActorId(actor.id),
+      actorEmail: actor.email || null,
       action: "EMPLOYEE_LIST",
       target: null,
       metadata,
     });
 
-    return res.status(200).send(resp);
+    return res.status(200).json(resp);
   } catch (error) {
     console.error("getEmps Error:", error);
+
     await createErrorLog({
       eventType: "get_employees_exception",
       severity: "HIGH",
       message: error?.message || "Unknown error in getEmps",
-      tenantId: req.query?.orgId ? Number(req.query.orgId) : null,
-      userId: req.user?.id || parseActorId(req.body?.actorId),
-      payload: { stack: error?.stack || null, query: req.query, body: req.body },
+      tenantId: req.user?.organisation || null,
+      userId: req.user?.id || null,
+      payload: {
+        stack: error?.stack || null,
+        route: "GET /getAllEmps",
+      },
     });
-    return res.status(500).json({ msg: error });
+
+    return res.status(500).json({
+      message: "Failed to fetch employees",
+    });
   }
 };
+
 
 /**
  * update employee

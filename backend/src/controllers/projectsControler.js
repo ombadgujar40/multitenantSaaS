@@ -1,5 +1,5 @@
 import express from "express";
-import { register, deleteProject, handleAcceptProject, updateProject, getProjects, getProjectsStats, getProjectDetail } from "../routes/projectsRoutes.js";
+import { register, deleteProject, handleAcceptProject, updateProject, getProjects, getProjectsStats, getProjectDetail, getCustomerStats } from "../routes/projectsRoutes.js";
 import { verifyToken } from "../middleware/verifytoken.js";
 
 const router = express.Router();
@@ -15,5 +15,6 @@ router.get("/getProjectDetail/:projId", getProjectDetail);
 router.put("/update/:projectId", verifyToken, updateProject);
 router.put("/activate/:projectId", verifyToken, handleAcceptProject);
 router.delete("/delete/:id", deleteProject);
+router.get("/customerStats", verifyToken, getCustomerStats);
 
 export default router;

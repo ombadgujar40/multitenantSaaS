@@ -89,77 +89,217 @@ async function createAudit({ req, actorId = null, actorEmail = null, action, tar
    Task controllers
    ----------------------- */
 
+
 export const register = async (req, res) => {
   try {
-    const { projectId, assignedToId, title, description, status, dueDate } = req.body;
-    // Prefer trusted req.user, fallback to body
-    const actor = req.user || { id: req.body?.actorId || null, role: req.body?.actorRole || null, email: req.body?.actorEmail || null };
+    const {
+      projectId,
+      assignedToId,
+      title,
+      description,
+      status,
+      dueDate,
+    } = req.body;
 
-    const project = await prisma.project.findUnique({ where: { id: Number(projectId) } });
+    // 1. Use the authenticated user's identity.
+    const actor = req.user;
+
+    if (!actor) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (actor.role !== "customer") {
+      return res.status(403).json({
+        message: "Only customers can create tasks",
+      });
+    }
+
+    const projectIdNum = Number(projectId);
+
+    if (!Number.isInteger(projectIdNum) || projectIdNum <= 0) {
+      return res.status(400).json({ message: "Invalid project ID" });
+    }
+
+    if (!title?.trim()) {
+      return res.status(400).json({ message: "Task title is required" });
+    }
+
+    // 2. Find the project BEFORE accessing project.orgId.
+    const project = await prisma.project.findUnique({
+      where: { id: projectIdNum },
+    });
+
     if (!project) {
       const metadata = buildMetadata(req, {
         outcome: "FAILURE",
         outcomeReason: "PROJECT_NOT_FOUND",
-        actorRole: actor?.role || null,
-        tenantId: null,
+        actorRole: actor.role,
+        tenantId: actor.organisation || null,
         resourceType: "TASK",
       });
 
       await createAudit({
         req,
-        actorId: parseActorId(actor?.id),
-        actorEmail: actor?.email || null,
+        actorId: parseActorId(actor.id),
+        actorEmail: actor.email || null,
         action: "TASK_CREATE",
-        target: { projectId: Number(projectId) },
+        target: { projectId: projectIdNum },
         metadata,
       });
 
-      return res.status(400).json({ message: "Project does not exist" });
+      return res.status(404).json({
+        message: "Project does not exist",
+      });
     }
 
-    const createTask = await prisma.task.create({
-      data: {
-        projectId: Number(projectId),
-        assignedToId: assignedToId ? Number(assignedToId) : null,
-        title,
-        description,
-        status,
-        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-      },
+    // 3. Check that this customer owns the project.
+    if (!project.customerId) {
+      return res.status(400).json({
+        message: "This project has no associated customer",
+      });
+    }
+
+    if (Number(project.customerId) !== Number(actor.id)) {
+      return res.status(403).json({
+        message: "You cannot create tasks for another customer's project",
+      });
+    }
+
+    // 4. Validate the selected employee.
+    let employeeId = null;
+
+    if (
+      assignedToId !== undefined &&
+      assignedToId !== null &&
+      assignedToId !== ""
+    ) {
+      employeeId = Number(assignedToId);
+
+      if (!Number.isInteger(employeeId) || employeeId <= 0) {
+        return res.status(400).json({
+          message: "Invalid employee ID",
+        });
+      }
+
+      const employee = await prisma.employee.findFirst({
+        where: {
+          id: employeeId,
+          orgId: project.orgId,
+          role: "employee",
+        },
+        select: { id: true },
+      });
+
+      if (!employee) {
+        return res.status(400).json({
+          message: "Employee does not belong to this project organization",
+        });
+      }
+    }
+
+    // 5. Create the task and add the employee to the existing
+    //    project chatroom in one database transaction.
+    const createTask = await prisma.$transaction(async (tx) => {
+      const task = await tx.task.create({
+        data: {
+          projectId: projectIdNum,
+          assignedToId: employeeId,
+          title: title.trim(),
+          description: description || null,
+          status: status || "pending",
+          dueDate: dueDate ? new Date(dueDate) : null,
+        },
+      });
+
+      // If no employee was selected, the customer owns the task.
+      if (employeeId !== null) {
+        const chatGroup = await tx.chatGroup.findUnique({
+          where: { projectId: projectIdNum },
+        });
+
+        if (!chatGroup) {
+          throw new Error("PROJECT_CHAT_GROUP_NOT_FOUND");
+        }
+
+        // Do not create duplicate memberships.
+        const existingMembership = await tx.groupMember.findFirst({
+          where: {
+            groupId: chatGroup.id,
+            employeeId,
+          },
+          select: { id: true },
+        });
+
+        if (!existingMembership) {
+          await tx.groupMember.create({
+            data: {
+              groupId: chatGroup.id,
+              employeeId,
+              role: "member",
+            },
+          });
+        }
+      }
+
+      return task;
     });
 
+    // 6. Keep the existing audit logging.
     const metadata = buildMetadata(req, {
       outcome: "SUCCESS",
-      actorRole: actor?.role || null,
-      tenantId: project.orgId || null,
+      actorRole: actor.role,
+      tenantId: project.orgId,
       resourceType: "TASK",
       resourceId: createTask.id,
-      extra: { createdTaskTitle: createTask.title, assignedToId: createTask.assignedToId },
+      extra: {
+        createdTaskTitle: createTask.title,
+        assignedToId: createTask.assignedToId,
+      },
     });
 
     await createAudit({
       req,
-      actorId: parseActorId(actor?.id),
-      actorEmail: actor?.email || null,
+      actorId: parseActorId(actor.id),
+      actorEmail: actor.email || null,
       action: "TASK_CREATE",
-      target: { projectId: Number(projectId), taskId: createTask.id },
+      target: {
+        projectId: projectIdNum,
+        taskId: createTask.id,
+      },
       metadata,
     });
 
-    return res.status(201).json({ message: "task created successfully", createTask });
+    return res.status(201).json({
+      message: "Task created successfully",
+      createTask,
+    });
   } catch (error) {
     console.error("task register error:", error);
+
     await createErrorLog({
       eventType: "task_register_exception",
       severity: "CRITICAL",
       message: error?.message || "Unknown error in task register",
       tenantId: req.user?.organisation || null,
       userId: req.user?.id || null,
-      payload: { stack: error?.stack || null, body: req.body, route: "POST /tasks/register" },
+      payload: {
+        stack: error?.stack || null,
+        body: req.body,
+        route: "POST /tasks/register",
+      },
     });
+
+    if (error.message === "PROJECT_CHAT_GROUP_NOT_FOUND") {
+      return res.status(409).json({
+        message:
+          "This project has no chatroom. Create or repair its chatroom before assigning employees.",
+      });
+    }
+
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 export const getTasks = async (req, res) => {
   try {
@@ -363,51 +503,100 @@ export const updateTasks = async (req, res) => {
   }
 };
 
+
 export const deleteTasks = async (req, res) => {
   try {
-    const { id } = req.params;
-    const actor = req.user || { id: req.body?.actorId || null, role: req.body?.actorRole || null, email: req.body?.actorEmail || null };
+    const taskId = Number(req.params.id);
+    const actor = req.user;
 
-    // read before delete to capture project/org context
-    const before = await prisma.task.findUnique({ where: { id: Number(id) } });
-
-    if (!before) {
-      const metadata = buildMetadata(req, {
-        outcome: "FAILURE",
-        outcomeReason: "TASK_NOT_FOUND",
-        actorRole: actor?.role || null,
-        tenantId: null,
-        resourceType: "TASK",
+    if (!actor || actor.role !== "customer") {
+      return res.status(403).json({
+        message: "Only customers can delete tasks",
       });
-
-      await createAudit({ req, actorId: parseActorId(actor?.id), actorEmail: actor?.email || null, action: "TASK_DELETE", target: { taskId: Number(id) }, metadata });
-      return res.status(404).json({ message: "Task not found" });
     }
 
-    await prisma.task.delete({ where: { id: Number(id) } });
+    if (!Number.isInteger(taskId) || taskId <= 0) {
+      return res.status(400).json({
+        message: "Invalid task ID",
+      });
+    }
 
-    const metadata = buildMetadata(req, {
-      outcome: "SUCCESS",
-      actorRole: actor?.role || null,
-      tenantId: before?.project?.orgId || null,
-      resourceType: "TASK",
-      resourceId: Number(id),
-      extra: { deletedTaskSnapshot: { id: before.id, title: before.title, status: before.status, assignedToId: before.assignedToId } },
+    const customerId = Number(actor.id);
+
+    if (!Number.isInteger(customerId) || customerId <= 0) {
+      return res.status(401).json({
+        message: "Invalid customer identity",
+      });
+    }
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        project: {
+          select: {
+            id: true,
+            customerId: true,
+            orgId: true,
+          },
+        },
+      },
     });
 
-    await createAudit({ req, actorId: parseActorId(actor?.id), actorEmail: actor?.email || null, action: "TASK_DELETE", target: { taskId: Number(id) }, metadata });
+    if (!task) {
+      return res.status(404).json({
+        message: "Task not found",
+      });
+    }
 
-    return res.json({ message: "Deleted successfully" });
+    if (task.project.customerId !== customerId) {
+      return res.status(403).json({
+        message: "You cannot delete tasks from another customer's project",
+      });
+    }
+
+    await prisma.task.delete({
+      where: { id: taskId },
+    });
+
+    await createAudit({
+      req,
+      actorId: parseActorId(actor.id),
+      actorEmail: actor.email || null,
+      action: "TASK_DELETE",
+      target: {
+        taskId,
+        projectId: task.projectId,
+      },
+      metadata: buildMetadata(req, {
+        outcome: "SUCCESS",
+        actorRole: actor.role,
+        tenantId: task.project.orgId,
+        resourceType: "TASK",
+        resourceId: taskId,
+      }),
+    });
+
+    return res.status(200).json({
+      message: "Task deleted successfully",
+    });
   } catch (error) {
     console.error("deleteTasks Error:", error);
+
     await createErrorLog({
       eventType: "delete_task_exception",
       severity: "HIGH",
       message: error?.message || "Unknown error in deleteTasks",
       tenantId: req.user?.organisation || null,
       userId: req.user?.id || null,
-      payload: { stack: error?.stack || null, params: req.params, body: req.body },
+      payload: {
+        stack: error?.stack || null,
+        params: req.params,
+      },
     });
-    return res.status(500).json({ message: "Server error" });
+
+    return res.status(500).json({
+      message: "Failed to delete task",
+    });
   }
 };
+

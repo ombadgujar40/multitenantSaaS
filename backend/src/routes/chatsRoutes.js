@@ -10,59 +10,87 @@ import express from "express";
  * - req.user is populated by your verifyToken middleware (contains id, role, orgId, maybe type)
  */
 
+
 export const getUserGroups = async (req, res) => {
   const prisma = req.app.get("prisma");
   const user = req.user;
-  if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+  // Prevent cached group lists while debugging membership.
+  res.set("Cache-Control", "no-store");
+
+  if (!user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
   try {
-    // determine if request user is employee or customer
-    // prefer explicit claim 'type' else infer from role
-    const userType = user.type || (user.role === "customer" ? "customer" : "employee");
+    const userId = Number(user.id);
+    const orgId = Number(user.organisation);
 
-    // find groups where the user is a member (via GroupMember)
-    let memberships;
-    if (userType === "employee") {
-      memberships = await prisma.groupMember.findMany({
-        where: { employeeId: Number(user.id) },
-        include: {
-          group: {
-            include: {
-              // include a lightweight count of members
-              members: { select: { id: true } },
-              project: { select: { id: true, name: true } },
-            },
-          },
-        },
-        orderBy: { joinedAt: "desc" },
-      });
-    } else {
-      memberships = await prisma.groupMember.findMany({
-        where: { customerId: Number(user.id) },
-        include: {
-          group: {
-            include: {
-              members: { select: { id: true } },
-              project: { select: { id: true, name: true } },
-            },
-          },
-        },
-        orderBy: { joinedAt: "desc" },
-      });
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(401).json({ message: "Invalid user ID" });
     }
 
-    const groups = memberships.map((m) => {
-      const g = m.group;
-      return {
-        id: g.id,
-        name: g.name,
-        projectId: g.projectId,
-        orgId: g.orgId,
-        memberCount: (g.members || []).length,
-        lastMessageAt: g.lastMessageAt,
-        project: g.project || null,
-      };
+    if (!Number.isInteger(orgId) || orgId <= 0) {
+      return res.status(403).json({ message: "Invalid organization" });
+    }
+
+    let membershipWhere;
+
+    if (user.role === "customer") {
+      membershipWhere = { customerId: userId };
+    } else if (user.role === "employee") {
+      membershipWhere = { employeeId: userId };
+    } else if (user.role === "admin") {
+      // Admins see groups in their organization.
+      const groups = await prisma.chatGroup.findMany({
+        where: { orgId },
+        include: {
+          members: { select: { id: true } },
+          project: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return res.json(
+        groups.map((g) => ({
+          id: g.id,
+          name: g.name,
+          projectId: g.projectId,
+          orgId: g.orgId,
+          memberCount: g.members.length,
+          lastMessageAt: g.lastMessageAt,
+          project: g.project || null,
+        }))
+      );
+    } else {
+      return res.status(403).json({ message: "Unsupported user role" });
+    }
+
+    const memberships = await prisma.groupMember.findMany({
+      where: {
+        ...membershipWhere,
+        group: { orgId },
+      },
+      include: {
+        group: {
+          include: {
+            members: { select: { id: true } },
+            project: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: { joinedAt: "desc" },
     });
+
+    const groups = memberships.map(({ group }) => ({
+      id: group.id,
+      name: group.name,
+      projectId: group.projectId,
+      orgId: group.orgId,
+      memberCount: group.members.length,
+      lastMessageAt: group.lastMessageAt,
+      project: group.project || null,
+    }));
 
     return res.json(groups);
   } catch (err) {
@@ -70,6 +98,7 @@ export const getUserGroups = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 /**
  * GET messages for a group (cursor pagination)
@@ -322,31 +351,55 @@ export const addMemberToGroup = async (req, res) => {
   }
 };
 
+
 export const getGroupMembers = async (req, res) => {
   const prisma = req.app.get("prisma");
   const user = req.user;
   const groupId = Number(req.params.groupId);
 
-  if (!user) return res.status(401).json({ message: "Unauthorized" });
+  if (!user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  if (!Number.isInteger(groupId) || groupId <= 0) {
+    return res.status(400).json({ message: "Invalid group ID" });
+  }
 
   try {
-    // Fetch all group members with joined info
+    const userType =
+      user.type || (user.role === "customer" ? "customer" : "employee");
+
+    const membershipWhere = {
+      groupId,
+      ...(userType === "customer"
+        ? { customerId: Number(user.id) }
+        : userType === "employee"
+          ? { employeeId: Number(user.id) }
+          : {}),
+    };
+
+    if (!["customer", "employee"].includes(userType)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const membership = await prisma.groupMember.findFirst({
+      where: membershipWhere,
+    });
+
+    if (!membership) {
+      return res.status(403).json({
+        message: "You are not a member of this project chat",
+      });
+    }
+
     const members = await prisma.groupMember.findMany({
       where: { groupId },
       include: {
         employee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: { id: true, name: true, email: true },
         },
         customer: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: { id: true, name: true, email: true },
         },
       },
       orderBy: { id: "asc" },
@@ -355,7 +408,10 @@ export const getGroupMembers = async (req, res) => {
     return res.status(200).json(members);
   } catch (err) {
     console.error("getGroupMembers error:", err);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({
+      message: "Failed to fetch group members",
+    });
   }
 };
+
 

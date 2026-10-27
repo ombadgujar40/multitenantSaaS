@@ -1,5 +1,12 @@
 import { prisma } from "../config/prismaconfig.js";
 import { v4 as uuidv4 } from "uuid";
+import { redisClient } from "../config/reddis.js";
+import {
+  customerStatsCacheHits,
+  customerStatsCacheMisses,
+  customerStatsRedisErrors,
+  customerStatsDbQueries,
+} from "../config/metrics.js";
 
 /* -------------------
    Helpers (shared style)
@@ -88,75 +95,179 @@ async function createAudit({ req, actorId = null, actorEmail = null, action, tar
    Project controllers
    ----------------------- */
 
+
+
 export const register = async (req, res) => {
   try {
-    const { name, description, dueDate } = req.body;
-    const { id: userId, organisation } = req.user || { id: req.body?.actorId || null, organisation: req.body?.organisation || null };
+    // 1. Authenticate the customer.
+    const { id: userId, role, organisation } = req.user || {};
 
-    const org = await prisma.organization.findUnique({ where: { id: organisation } });
-    if (!org) {
-      const metadata = buildMetadata(req, {
-        outcome: "FAILURE",
-        outcomeReason: "ORG_NOT_FOUND",
-        actorRole: req.user?.role || null,
-        tenantId: null,
-        resourceType: "PROJECT",
+    if (role !== "customer") {
+      return res.status(403).json({
+        message: "Only customers can create projects",
       });
-
-      await createAudit({
-        req,
-        actorId: parseActorId(userId),
-        actorEmail: req.user?.email || null,
-        action: "PROJECT_REGISTER",
-        target: null,
-        metadata,
-      });
-
-      return res.status(404).json({ message: "Organization does not exists" });
     }
 
-    const createProject = await prisma.project.create({
-      data: {
-        orgId: organisation,
-        customerId: userId,
-        name,
-        description,
-        dueDate: new Date(dueDate).toISOString(),
-      },
+    const customerId = Number(userId);
+    const orgId = Number(organisation);
+
+    if (
+      !Number.isInteger(customerId) ||
+      customerId <= 0 ||
+      !Number.isInteger(orgId) ||
+      orgId <= 0
+    ) {
+      return res.status(401).json({
+        message: "Invalid authenticated user or organization",
+      });
+    }
+
+    const { name, description, dueDate } = req.body;
+
+    if (typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({
+        message: "Project name is required",
+      });
+    }
+
+    let parsedDueDate = null;
+
+    if (dueDate) {
+      parsedDueDate = new Date(dueDate);
+
+      if (Number.isNaN(parsedDueDate.getTime())) {
+        return res.status(400).json({
+          message: "Invalid due date",
+        });
+      }
+    }
+
+    // 2. Verify the organization.
+    const org = await prisma.organization.findUnique({
+      where: { id: orgId },
     });
 
+    if (!org) {
+      return res.status(404).json({
+        message: "Organization does not exist",
+      });
+    }
+
+    // 3. Atomically create the project and its chatroom.
+    const result = await prisma.$transaction(async (tx) => {
+      const customer = await tx.customer.findFirst({
+        where: {
+          id: customerId,
+          orgId,
+        },
+        select: { id: true },
+      });
+
+      if (!customer) {
+        throw new Error("CUSTOMER_NOT_FOUND");
+      }
+
+      // Create project.
+      const project = await tx.project.create({
+        data: {
+          orgId,
+          customerId,
+          name: name.trim(),
+          description: description || null,
+          dueDate: parsedDueDate,
+        },
+      });
+
+      // Create one chatroom for this project.
+      const chatGroup = await tx.chatGroup.create({
+        data: {
+          projectId: project.id,
+          orgId,
+          name: `${project.name} Chat`,
+        },
+      });
+
+      // Add the customer as the project chat manager.
+      await tx.groupMember.create({
+        data: {
+          groupId: chatGroup.id,
+          customerId,
+          role: "manager",
+        },
+      });
+
+      // Add an initial system message.
+      await tx.message.create({
+        data: {
+          groupId: chatGroup.id,
+          senderId: customerId,
+          senderType: "system",
+          text: `Project chatroom created for "${project.name}".`,
+        },
+      });
+
+      return { project, chatGroup };
+    });
+
+    // 4. Record the successful operation in your audit log.
     const metadata = buildMetadata(req, {
       outcome: "SUCCESS",
-      actorRole: req.user?.role || null,
-      tenantId: organisation,
+      actorRole: role,
+      tenantId: orgId,
       resourceType: "PROJECT",
-      resourceId: createProject.id,
-      extra: { createdProjectName: createProject.name },
+      resourceId: result.project.id,
+      extra: {
+        createdProjectName: result.project.name,
+        chatGroupId: result.chatGroup.id,
+      },
     });
 
     await createAudit({
       req,
-      actorId: parseActorId(userId),
+      actorId: parseActorId(customerId),
       actorEmail: req.user?.email || null,
       action: "PROJECT_REGISTER",
-      target: { projectId: createProject.id },
+      target: {
+        projectId: result.project.id,
+        chatGroupId: result.chatGroup.id,
+      },
       metadata,
     });
 
-    return res.status(201).json({ message: "project created successfully", createProject });
+    return res.status(201).json({
+      message: "Project and project chatroom created successfully",
+      createProject: result.project,
+      chatGroup: result.chatGroup,
+    });
   } catch (error) {
+    if (error.message === "CUSTOMER_NOT_FOUND") {
+      return res.status(403).json({
+        message: "Customer does not belong to this organization",
+      });
+    }
+
     console.error("project register error:", error);
+
     await createErrorLog({
       eventType: "project_register_exception",
       severity: "CRITICAL",
       message: error?.message || "Unknown error in project register",
       tenantId: req.user?.organisation || null,
       userId: req.user?.id || null,
-      payload: { stack: error?.stack || null, body: req.body, route: "POST /projects/register" },
+      payload: {
+        stack: error?.stack || null,
+        body: req.body,
+        route: "POST /projects/register",
+      },
     });
-    return res.status(500).json({ message: "Server error" });
+
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 };
+
+
 
 export const getProjects = async (req, res) => {
   try {
@@ -194,12 +305,45 @@ export const getProjects = async (req, res) => {
         return res.status(200).send(adminResp);
       }
 
+      // case "customer": {
+      // await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // const custResp = await prisma.project.findMany({
+      //   where: { orgId: organisation, customerId: id },
+      //   select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, deliverableLink: true, dueDate: true },
+      // });
+
+
+      // const metadata = buildMetadata(req, {
+      //   outcome: "SUCCESS",
+      //   actorRole: role,
+      //   tenantId: organisation || null,
+      //   resourceType: "PROJECT",
+      //   extra: { resultCount: custResp.length },
+      // });
+
+      // await createAudit({ req, actorId: id, actorEmail: req.user?.email || null, action: "PROJECT_LIST", target: null, metadata });
+
+      // return res.status(200).send(custResp);        
+
+
       case "customer": {
-        await new Promise(resolve => setTimeout(resolve, 5000));
+
         const custResp = await prisma.project.findMany({
           where: { orgId: organisation, customerId: id },
-          select: { id: true, name: true, description: true, status: true, createdAt: true, orgId: true, org: true, deliverableLink: true, dueDate: true },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            status: true,
+            createdAt: true,
+            orgId: true,
+            org: true,
+            deliverableLink: true,
+            dueDate: true,
+          },
         });
+
 
         const metadata = buildMetadata(req, {
           outcome: "SUCCESS",
@@ -209,10 +353,19 @@ export const getProjects = async (req, res) => {
           extra: { resultCount: custResp.length },
         });
 
-        await createAudit({ req, actorId: id, actorEmail: req.user?.email || null, action: "PROJECT_LIST", target: null, metadata });
-        
-        return res.status(200).send(custResp);        
+        await createAudit({
+          req,
+          actorId: id,
+          actorEmail: req.user?.email || null,
+          action: "PROJECT_LIST",
+          target: null,
+          metadata,
+        });
+
+        return res.status(200).send(custResp);
       }
+
+      // }
 
       default: {
         const metadata = buildMetadata(req, {
@@ -307,6 +460,86 @@ export const getProjectsStats = async (req, res) => {
     return res.status(500).json({ msg: error });
   }
 };
+
+
+
+export const getCustomerStats = async (req, res) => {
+  const { id, organisation, role } = req.user || {};
+
+  if (role !== "customer") {
+    return res.status(403).json({
+      message: "Customer access required",
+    });
+  }
+
+  if (
+    !Number.isInteger(id) ||
+    !Number.isInteger(organisation)
+  ) {
+    return res.status(401).json({
+      message: "Invalid customer identity",
+    });
+  }
+
+  const cacheKey = `customerStats:org:${organisation}:customer:${id}`;
+
+  try {
+    // 1. Try Redis first.
+    if (redisClient.isReady) {
+      try {
+        const cached = await redisClient.get(cacheKey);
+
+        if (cached !== null) {
+          res.set("X-Cache", "HIT");
+          return res.status(200).json(JSON.parse(cached));
+        }
+      } catch (error) {
+        console.error("Redis cache read failed:", error.message);
+      }
+    }
+
+    // 2. Cache miss: query PostgreSQL.
+    const baseWhere = {
+      orgId: organisation,
+      customerId: id,
+    };
+
+    const [active, completed, pending] = await Promise.all([
+      prisma.project.count({
+        where: { ...baseWhere, status: "active" },
+      }),
+      prisma.project.count({
+        where: { ...baseWhere, status: "completed" },
+      }),
+      prisma.project.count({
+        where: { ...baseWhere, status: "pending" },
+      }),
+    ]);
+
+    const stats = { active, completed, pending };
+
+    // 3. Cache for 30 seconds when Redis is available.
+    if (redisClient.isReady) {
+      try {
+        await redisClient.set(cacheKey, JSON.stringify(stats), {
+          EX: 30,
+        });
+      } catch (error) {
+        console.error("Redis cache write failed:", error.message);
+      }
+    }
+
+    res.set("X-Cache", "MISS");
+    return res.status(200).json(stats);
+  } catch (error) {
+    console.error("getCustomerStats error:", error);
+    return res.status(500).json({
+      message: "Failed to retrieve customer project statistics",
+    });
+  }
+};
+
+
 
 export const updateProject = async (req, res) => {
   try {

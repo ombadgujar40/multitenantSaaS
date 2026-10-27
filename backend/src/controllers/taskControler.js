@@ -7,11 +7,11 @@ router.get("/health", (req, res) => {
   res.status(200).json({ok: true});
 });
 
-router.post("/register", register);
+router.post("/register", verifyToken, register);
 router.get("/getAllTasks", verifyToken, getTasks);
 router.get("/getProjectTasks/:projectId", verifyToken, getProjectTasks);
 // router.put("/update/:id", updateTasks)
 router.patch("/update/:id", verifyToken, updateTasks);
-router.delete("/delete/:id", deleteTasks);
+router.delete("/delete/:id", verifyToken, deleteTasks);
 
 export default router;
